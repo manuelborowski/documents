@@ -36,13 +36,7 @@ def person():
 @bp_person.route('/person/meta', methods=['GET'])
 @login_required
 def meta():
-    klasgroepen = dl.person.get_klasgroepen()
-    lijsten = dl.list.get_m()
-    lijsten = [l.to_dict() for l in lijsten]
-    my_ip = al.socketio.get_remote_ip()
-    rfidusb = dl.rfid.get_rfidudb_configuration()
-    new_rfid_margin = app.config["NEW_RFID_MARGIN"]
-    return json.dumps({"klasgroepen": klasgroepen, "lijsten": lijsten, "my_ip": my_ip, "rfidusb": rfidusb, "new_rfid_margin": new_rfid_margin})
+    return json.dumps({})
 
 
 class Config(DatatableConfig):
@@ -64,5 +58,5 @@ class Config(DatatableConfig):
     def post_sql_filter(self, l, filter, count):
         return al.person.post_sql_filter(l, filter, count)
 
-config = Config("person", "Deelnemers")
+config = Config("person", "Personen")
 

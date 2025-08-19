@@ -18,11 +18,6 @@ class Person(db.Model, SerializerMixin):
     klasgroep = db.Column(db.String(256), default='')
     instellingsnummer = db.Column(db.String(256), default='')
     informatnummer = db.Column(db.String(256), default='')
-    lijst_id = db.Column(db.Integer(), default=None)
-    checkin_time = db.Column(db.DateTime, default=None)
-    new_rfid_time = db.Column(db.DateTime, default=None)
-    result_time = db.Column(db.Integer(), default=None)
-    temp_badge = db.Column(db.String(256), default="")
 
     @property
     def schoolcode(self):
@@ -101,16 +96,6 @@ def pre_sql_query():
     return db.session.query(Person)
 
 def pre_sql_filter(query, filters):
-    for f in filters:
-        if f['id'] == 'geslacht':
-            if f['value'] != 'all':
-                query = query.filter(Person.geslacht == f['value'])
-        if f['id'] == 'lijst':
-            if f['value'] != 'all':
-                if f['value'] == 'no-list':
-                    query = query.filter(Person.lijst_id == None)
-                else:
-                    query = query.filter(Person.lijst_id == f['value'])
     return query
 
 def pre_sql_search(search_string):
