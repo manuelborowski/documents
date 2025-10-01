@@ -25,7 +25,7 @@ def login():
                 if not user:
                     log.error('Could not save timestamp')
                 # Ok, continue
-                return redirect(url_for('person.show'))
+                return redirect(url_for('user.show'))
             else:
                 log.error(f'{sys._getframe().f_code.co_name}: Invalid username/password')
                 message = {"status": "error", "data": "Ongeldig(e) gebruikersnaam/wachtwoord"}
@@ -87,7 +87,29 @@ def login_ss():
                     log.error('Could not save user')
                     return redirect(url_for('auth.login'))
                 # Ok, continue
-                return redirect(url_for('person.show'))
+                return redirect(url_for('student.show'))
+            elif profile['basisrol'] == "Leerling" and profile["isMainAccount"] == 0:
+                # co-accounts of students are allowed to login
+                profile['username'] = str(profile["nrCoAccount"]) + profile['username'] # username is the same for coaccount 1 and 2
+                user = dl.user.get([('username', "c=" ,profile['username']), ('user_type', "=", dl.user.User.USER_TYPE.OAUTH)])
+                profile['last_login'] = datetime.datetime.now()
+                if user:
+                    profile['first_name'] = profile['name'] # student name and surname
+                    profile['last_name'] = profile['surname']
+                    user.email = profile['email'] # parent email
+                    user = dl.user.update(user, profile)
+                else:
+                    profile['first_name'] = profile['name']
+                    profile['last_name'] = profile['surname']
+                    profile['user_type'] = dl.user.User.USER_TYPE.OAUTH
+                    profile['level'] = 0 # guest access
+                    user = dl.user.add(profile)
+                login_user(user)
+                log.info(f'SS co-account user {user.username} logged in')
+                # Ok, continue
+                return redirect(url_for('document.show'))
+            else:
+                return("<h1>Toegang verboden</h1>")
         else:
             redirect_uri = f'{app.config["SMARTSCHOOL_OUATH_REDIRECT_URI"]}/ss'
             return redirect(f'{app.config["SMARTSCHOOL_OAUTH_SERVER"]}?app_uri={redirect_uri}')
@@ -105,6 +127,6 @@ def auto_login_generic():
             user = dl.user.update(user, {"last_login": datetime.datetime.now()})
             if not user:
                 log.error('Could not save timestamp')
-            return redirect(url_for('person.show'))
+            return redirect(url_for('student.show'))
     return render_template('login.html', message=None)
 

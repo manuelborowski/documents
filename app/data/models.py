@@ -9,7 +9,9 @@ def commit():
         db.session.rollback()
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
 
-def add_single(model, data={}, commit=True, timestamp=False):
+def add_single(model, data=None, commit=True, timestamp=False):
+    if data is None:
+        data = {}
     try:
         obj = model()
         for k, v in data.items():
@@ -31,7 +33,9 @@ def add_single(model, data={}, commit=True, timestamp=False):
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
     return None
 
-def add_multiple(model, data=[], timestamp=False):
+def add_multiple(model, data=None, timestamp=False):
+    if data is None:
+        data = []
     try:
         for d in data:
             add_single(model, d, commit=False, timestamp=timestamp)
@@ -41,7 +45,9 @@ def add_multiple(model, data=[], timestamp=False):
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
     return None
 
-def update_single(model, obj, data={}, commit=True, timestamp=False):
+def update_single(model, obj, data=None, commit=True, timestamp=False):
+    if data is None:
+        data = {}
     try:
         for k, v in data.items():
             if hasattr(obj, k):
@@ -63,7 +69,9 @@ def update_single(model, obj, data={}, commit=True, timestamp=False):
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
     return None
 
-def update_multiple(model, data=[], timestamp=False):
+def update_multiple(model, data=None, timestamp=False):
+    if data is None:
+        data = []
     try:
         for d in data:
             item = d["item"]
@@ -75,7 +83,11 @@ def update_multiple(model, data=[], timestamp=False):
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
     return None
 
-def delete_multiple(model, ids=[], objs=[]):
+def delete_multiple(model, ids=None, objs=None):
+    if ids is None:
+        ids = []
+    if objs is None:
+        objs = []
     try:
         if objs:
             for obj in objs:
@@ -91,7 +103,11 @@ def delete_multiple(model, ids=[], objs=[]):
     return None
 
 # filters is list of tupples: [(key, operator, value), ...]
-def get_multiple(model, filters=[], fields=[], order_by=None, first=False, count=False, active=True, start=None, stop=None, distinct=False):
+def get_multiple(model, filters=None, fields=None, order_by=None, first=False, count=False, active=True, start=None, stop=None, distinct=False):
+    if filters is None:
+        filters = []
+    if fields is None:
+        fields = []
     try:
         tablename = model.__tablename__
         entities = [text(f'{tablename}.{f}') for f in fields]
@@ -146,7 +162,9 @@ def get_multiple(model, filters=[], fields=[], order_by=None, first=False, count
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
         raise e
 
-def get_first_single(model, filters=[], order_by=None):
+def get_first_single(model, filters=None, order_by=None):
+    if filters is None:
+        filters = []
     try:
         obj = get_multiple(model, filters, order_by=order_by, first=True)
         return obj

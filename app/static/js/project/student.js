@@ -4,11 +4,11 @@ import {Rfid} from "../common/rfidusb.js";
 import {socketio} from "../common/socketio.js";
 import {AlertPopup} from "../common/popup.js";
 
-const meta = await fetch_get("person.meta");
+const meta = await fetch_get("student.meta");
 
 $(document).ready(async function () {
     datatables_init({});
     // Even on the students page, it is possible to get status-popups
-    socketio.subscribe_to_room(meta.my_ip);
-    socketio.subscribe_on_receive("alert-popup", (type, data) => new AlertPopup("warning", data, 6000));
+    // socketio.subscribe_to_room(meta.my_ip);
+    // socketio.subscribe_on_receive("alert-popup", (type, data) => new AlertPopup("warning", data, 6000));
 });

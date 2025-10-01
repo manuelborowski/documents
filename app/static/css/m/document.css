@@ -1,0 +1,123 @@
+
+
+*, ::after, ::before {
+     box-sizing: unset;
+}
+
+html {
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Full height of the viewport */
+    /*max-width: 100%;*/
+    padding: 0;
+
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+}
+
+body > nav > div {
+    display: flex;
+    background-color: #007bff;
+    color: white;
+    padding: 4px;
+    text-align: center;
+    width: 97%;
+    z-index: 1000; /* Keep it above other content */
+    flex-flow: row nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+main {
+    flex: 1;
+    overflow-y: auto; /* Enable scrolling if content overflows */
+    padding-top: 10px;
+    background-color: #f8f9fa;
+}
+
+footer {
+    height: 30px;
+    background-color: #333;
+    color: white;
+    padding: 5px;
+    text-align: center;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Keep it above other content */
+}
+
+button {
+    width: 90%;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.green {
+    background-color: #aaff00;
+    color: black;
+}
+
+.red {
+    background-color: #e10e3b;
+}
+
+.form-element .required {
+    color: orangered;
+}
+
+input, select, textarea {
+    width: 90%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+input[type="checkbox"] {
+    margin-top: 0;
+}
+
+table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-element {
+    margin-top: 10px;
+}
+
+label:has(input[type="checkbox"]) {
+    display: inline-flex;
+}
+
+.register-active {
+  background: white;
+}
+

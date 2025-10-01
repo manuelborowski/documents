@@ -11,7 +11,7 @@ class User(UserMixin, db.Model, SerializerMixin):
 
     date_format = '%d/%m/%Y'
     datetime_format = '%d/%m/%Y %H:%M'
-    serialize_rules = ("-password_hash","-url_token")
+    serialize_rules = ("-password_hash",)
 
     class USER_TYPE:
         LOCAL = 'local'
@@ -23,6 +23,7 @@ class User(UserMixin, db.Model, SerializerMixin):
     }
 
     level_label = {
+        0: "Gast",
         1: "Gebruiker",
         2: "Gebruiker+",
         3: "Secretariaat",
@@ -30,19 +31,15 @@ class User(UserMixin, db.Model, SerializerMixin):
         5: "Administrator"
     }
 
-
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(256))
     username = db.Column(db.String(256))
     first_name = db.Column(db.String(256))
     last_name = db.Column(db.String(256))
     password_hash = db.Column(db.String(256))
-    url_token = db.Column(db.String(256), default=None)
-    level = db.Column(db.Integer)
+    level = db.Column(db.Integer, default= -1)
     user_type = db.Column(db.String(256))
     last_login = db.Column(db.DateTime())
-    rfid = db.Column(db.String(256), default=None)
-    pin = db.Column(db.String(256), default=None)
 
     @property
     def is_local(self):
@@ -51,6 +48,10 @@ class User(UserMixin, db.Model, SerializerMixin):
     @property
     def is_oauth(self):
         return self.user_type == User.USER_TYPE.OAUTH
+
+    @property
+    def is_at_least_level_0(self):
+        return self.level >= 0
 
     @property
     def is_at_least_user(self):
@@ -96,20 +97,30 @@ class User(UserMixin, db.Model, SerializerMixin):
 def commit():
     return app.data.models.commit()
 
-def add(data = {}):
+def add(data=None):
+    if data is None:
+        data = {}
     if 'password' in data:
         data['password_hash'] = generate_password_hash(data['password'])
     return dl.models.add_single(User, data)
 
-def update(user, data={}):
+def update(user, data=None):
+    if data is None:
+        data = {}
     if 'password' in data:
         data['password_hash'] = generate_password_hash(data['password'])
     return dl.models.update_single(User, user, data)
 
-def get_m(filters=[], fields=[], order_by=None, first=False, count=False, active=True):
+def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True):
+    if filters is None:
+        filters = []
+    if fields is None:
+        fields = []
     return dl.models.get_multiple(User, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active)
 
-def get(filters=[]):
+def get(filters=None):
+    if filters is None:
+        filters = []
     return dl.models.get_first_single(User, filters)
 
 def delete(ids=None):

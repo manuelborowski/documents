@@ -17,12 +17,12 @@ def update(data):
 
 
 ######################### CRON HANDLERS ##################################
-def person_cron_load_from_sdh(opaque=None, **kwargs):
+def student_cron_load_from_sdh(opaque=None, **kwargs):
     log.info(f"{sys._getframe().f_code.co_name}, START")
     try:
-        updated_persons = []
+        updated_students = []
         nbr_updated = 0
-        new_persons = []
+        new_students = []
         sdh_key = app.config["SDH_API_KEY"]
         # get the klassen and klasgroepen
         klas2klasgroep = {}
@@ -40,8 +40,8 @@ def person_cron_load_from_sdh(opaque=None, **kwargs):
             sdh_students = res.json()
             if sdh_students['status']:
                 log.info(f'{sys._getframe().f_code.co_name}, retrieved {len(sdh_students["data"])} students from SDH')
-                db_persons = dl.person.get_m(("klasgroep", "!", "Leerkracht"))
-                db_informatnummer_to_student = {s.informatnummer: s for s in db_persons}
+                db_students = dl.student.get_m(("klasgroep", "!", "Leerkracht"))
+                db_informatnummer_to_student = {s.informatnummer: s for s in db_students}
                 for sdh_student in sdh_students["data"]:
                     if sdh_student["leerlingnummer"] in db_informatnummer_to_student:
                         # check for changed rfid or classgroup
@@ -55,33 +55,35 @@ def person_cron_load_from_sdh(opaque=None, **kwargs):
                             update["klasgroep"] = klasgroep
                         if db_student.instellingsnummer != sdh_student["instellingsnummer"]:
                             update["instellingsnummer"] = sdh_student["instellingsnummer"]
+                        if db_student.username != sdh_student["username"]:
+                            update["username"] = sdh_student["username"]
                         if update:
                             update.update({"item": db_student})
-                            updated_persons.append(update)
+                            updated_students.append(update)
                             log.info(f'{sys._getframe().f_code.co_name}, Update student {db_student.informatnummer}, update {update}')
                             nbr_updated += 1
                         del (db_informatnummer_to_student[sdh_student["leerlingnummer"]])
                     else:
-                        new_student = {"informatnummer": sdh_student["leerlingnummer"], "klasgroep": klas2klasgroep[sdh_student["klascode"]], "instellingsnummer": sdh_student["instellingsnummer"],
-                                       "roepnaam": sdh_student["roepnaam"], "naam": sdh_student["naam"], "voornaam": sdh_student["voornaam"], "rfid": sdh_student["rfid"], "geslacht": sdh_student[
-                                "geslacht"]}
-                        new_persons.append(new_student)
+                        new_student = {"informatnummer": sdh_student["leerlingnummer"], "klasgroep": klas2klasgroep[sdh_student["klascode"]],
+                                       "instellingsnummer": sdh_student["instellingsnummer"], "roepnaam": sdh_student["roepnaam"], "naam": sdh_student["naam"],
+                                       "voornaam": sdh_student["voornaam"], "rfid": sdh_student["rfid"], "geslacht": sdh_student["geslacht"], "username": sdh_student["username"]}
+                        new_students.append(new_student)
                         log.info(f'{sys._getframe().f_code.co_name}, New student {sdh_student["leerlingnummer"]}')
-                deleted_persons = [v for (k, v) in db_informatnummer_to_student.items()]
-                for person in deleted_persons:
-                    log.info(f'{sys._getframe().f_code.co_name}, Delete student {person.informatnummer}')
-                dl.person.add_m(new_persons)
-                dl.person.update_m(updated_persons)
-                dl.person.delete_m(objs=deleted_persons)
-                log.info(f'{sys._getframe().f_code.co_name}, Students add {len(new_persons)}, update {nbr_updated}, delete {len(deleted_persons)}')
+                deleted_students = [v for (k, v) in db_informatnummer_to_student.items()]
+                for student in deleted_students:
+                    log.info(f'{sys._getframe().f_code.co_name}, Delete student {student.informatnummer}')
+                dl.student.add_m(new_students)
+                dl.student.update_m(updated_students)
+                dl.student.delete_m(objs=deleted_students)
+                log.info(f'{sys._getframe().f_code.co_name}, Students add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
             else:
                 log.info(f'{sys._getframe().f_code.co_name}, error retrieving students from SDH, {sdh_students["data"]}')
         else:
             log.error(f'{sys._getframe().f_code.co_name}: api call to {sdh_student_url} returned {res.status_code}')
 
-        updated_persons = []
+        updated_students = []
         nbr_updated = 0
-        new_persons = []
+        new_students = []
         # check for new, updated or deleted staff
         sdh_staff_url = app.config["SDH_GET_STAFF_URL"]
         res = requests.get(sdh_staff_url, headers={'x-api-key': sdh_key})
@@ -89,8 +91,8 @@ def person_cron_load_from_sdh(opaque=None, **kwargs):
             sdh_staffs = res.json()
             if sdh_staffs['status']:
                 log.info(f'{sys._getframe().f_code.co_name}, retrieved {len(sdh_staffs["data"])} staffs from SDH')
-                db_persons = dl.person.get_m(("klasgroep", "=", "Leerkracht"))
-                db_informatnummer_to_staff = {s.informatnummer: s for s in db_persons}
+                db_students = dl.student.get_m(("klasgroep", "=", "Leerkracht"))
+                db_informatnummer_to_staff = {s.informatnummer: s for s in db_students}
                 for sdh_staff in sdh_staffs["data"]:
                     if sdh_staff["informat_id"] in ["", None]: continue
                     if sdh_staff["informat_id"] in db_informatnummer_to_staff:
@@ -101,22 +103,22 @@ def person_cron_load_from_sdh(opaque=None, **kwargs):
                             update["rfid"] = sdh_staff["rfid"]
                         if update:
                             update.update({"item": db_staff})
-                            updated_persons.append(update)
+                            updated_students.append(update)
                             log.info(f'{sys._getframe().f_code.co_name}, Update staff {db_staff.informatnummer}, update {update}')
                             nbr_updated += 1
                         del (db_informatnummer_to_staff[sdh_staff["informat_id"]])
                     else:
                         new_staff = {"informatnummer": sdh_staff["informat_id"], "klasgroep": "Leerkracht", "roepnaam": sdh_staff["voornaam"],
                                      "naam": sdh_staff["naam"], "voornaam": sdh_staff["voornaam"], "rfid": sdh_staff["rfid"], "geslacht": sdh_staff["geslacht"]}
-                        new_persons.append(new_staff)
+                        new_students.append(new_staff)
                         log.info(f'{sys._getframe().f_code.co_name}, New staff {sdh_staff["informat_id"]}')
-                deleted_persons = [v for (k, v) in db_informatnummer_to_staff.items()]
-                for person in deleted_persons:
-                    log.info(f'{sys._getframe().f_code.co_name}, Delete staff {person.informatnummer}')
-                dl.person.add_m(new_persons)
-                dl.person.update_m(updated_persons)
-                dl.person.delete_m(objs=deleted_persons)
-                log.info(f'{sys._getframe().f_code.co_name}, Staff add {len(new_persons)}, update {nbr_updated}, delete {len(deleted_persons)}')
+                deleted_students = [v for (k, v) in db_informatnummer_to_staff.items()]
+                for student in deleted_students:
+                    log.info(f'{sys._getframe().f_code.co_name}, Delete staff {student.informatnummer}')
+                dl.student.add_m(new_students)
+                dl.student.update_m(updated_students)
+                dl.student.delete_m(objs=deleted_students)
+                log.info(f'{sys._getframe().f_code.co_name}, Staff add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
             else:
                 log.info(f'{sys._getframe().f_code.co_name}, error retrieving staff from SDH, {sdh_staffs["data"]}')
         else:

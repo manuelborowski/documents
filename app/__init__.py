@@ -11,8 +11,9 @@ from werkzeug.routing import IntegerConverter
 #Warning: update flask_jsglue.py: from markupsafe import Markup
 
 # 0.1 copy from stopwatch 0.16
+# 0.2: log in via s, upload document, take picture of document.
 
-version = "0.1"
+version = "0.2"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -80,9 +81,10 @@ ap_scheduler.init_app(app)
 ap_scheduler.start()
 
 # Should be last to avoid circular import
-from app.presentation.view import auth, api, user, settings, person
+from app.presentation.view import auth, api, user, settings, student, document
 app.register_blueprint(auth.bp_auth)
 app.register_blueprint(api.bp_api)
 app.register_blueprint(user.bp_user)
 app.register_blueprint(settings.bp_settings)
-app.register_blueprint(person.bp_person)
+app.register_blueprint(student.bp_student)
+app.register_blueprint(document.bp_document)

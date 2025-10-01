@@ -68,7 +68,7 @@ def registration_add(*args, **kwargs):
     leerlingnummer = data["leerlingnummer"] if "leerlingnummer" in data else None
     location = data["location_key"].replace("--SLASH--", "/")
     timestamp = data["timestamp"] if "timestamp" in data else None
-    ret = al.person.registration_add(location, timestamp, leerlingnummer, rfid_code)
+    ret = al.student.registration_add(location, timestamp, leerlingnummer, rfid_code)
     for item in ret:
         if item["to"] == "ip" and client_ip:
             al.socketio.send_to_room(item, client_ip)

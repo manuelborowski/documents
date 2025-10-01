@@ -1,7 +1,7 @@
 import {ButtonMenu} from "./common/button_menu.js";
 
 var menu = [
-    { endpoint: "person.show", label: "Personen", userlevel: 3 },
+    { endpoint: "student.show", label: "Studenten", userlevel: 3 },
     { endpoint: "user.show", label: "Gebruikers", userlevel: 5 },
     { endpoint: "settings.show", label: "Instellingen", userlevel: 5 },
 ];
