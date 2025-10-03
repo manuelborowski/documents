@@ -107,7 +107,7 @@ def login_ss():
                 login_user(user)
                 log.info(f'SS co-account user {user.username} logged in')
                 # Ok, continue
-                return redirect(url_for('document.show'))
+                return redirect(url_for('document.showm'))
             else:
                 return("<h1>Toegang verboden</h1>")
         else:

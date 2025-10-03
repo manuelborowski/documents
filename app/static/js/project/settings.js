@@ -9,9 +9,7 @@ const template =
             type: "container", label: "Templates", save: true, default_collapsed: true, rows: [
                 {label: "Gebruikers", name: "user-datatables-template", type: "textarea"},
                 {label: "Studenten", name: "student-datatables-template", type: "textarea"},
-                {label: "Aanmelden", name: "checkin-datatables-template", type: "textarea"},
-                {label: "Resultaten", name: "result-datatables-template", type: "textarea"},
-                {label: "Reserve badges", name: "spare-datatables-template", type: "textarea"},
+                {label: "Documenten", name: "document-datatables-template", type: "textarea"},
             ]
         },
         {

@@ -19,6 +19,8 @@ class Student(db.Model, SerializerMixin):
     klasgroep = db.Column(db.String(256), default='')
     instellingsnummer = db.Column(db.String(256), default='')
     informatnummer = db.Column(db.String(256), default='')
+    co_account_1 = db.Column(db.String(256), default='')
+    co_account_2 = db.Column(db.String(256), default='')
 
     @property
     def schoolcode(self):

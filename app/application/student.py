@@ -66,7 +66,9 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                     else:
                         new_student = {"informatnummer": sdh_student["leerlingnummer"], "klasgroep": klas2klasgroep[sdh_student["klascode"]],
                                        "instellingsnummer": sdh_student["instellingsnummer"], "roepnaam": sdh_student["roepnaam"], "naam": sdh_student["naam"],
-                                       "voornaam": sdh_student["voornaam"], "rfid": sdh_student["rfid"], "geslacht": sdh_student["geslacht"], "username": sdh_student["username"]}
+                                       "voornaam": sdh_student["voornaam"], "rfid": sdh_student["rfid"], "geslacht": sdh_student["geslacht"], "username": sdh_student["username"],
+                                       "co_account_1": f"{sdh_student["lpv1_naam"]} {sdh_student["lpv1_voornaam"]}", "co_account_2": f"{sdh_student["lpv2_naam"]} {sdh_student["lpv2_voornaam"]}"
+                                       }
                         new_students.append(new_student)
                         log.info(f'{sys._getframe().f_code.co_name}, New student {sdh_student["leerlingnummer"]}')
                 deleted_students = [v for (k, v) in db_informatnummer_to_student.items()]

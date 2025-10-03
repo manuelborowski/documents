@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
-from app.presentation.view import level_0_required
+from app.data.datatables import DatatableConfig
+from app.presentation.view import datatable_get_data, level_0_required
 import json, sys
 from app import application as al, data as dl
 
@@ -15,7 +16,23 @@ bp_document = Blueprint('document', __name__)
 @level_0_required
 @login_required
 def show():
+    return render_template("document.html", table_config=config.create_table_config())
+
+@bp_document.route('/documentshowm', methods=["GET"])
+@level_0_required
+@login_required
+def showm():
     return render_template("m/document.html")
+
+# invoked when the client requests data from the database
+al.socketio.subscribe_on_type("document-datatable-data", lambda type, data: datatable_get_data(config, data))
+
+def value_update(type, data):
+    document = dl.document.get(("id", "=", data["id"]))
+    dl.document.update(document, {data["column"]: data["value"]})
+
+# invoked when a single cell in the table is updated
+al.socketio.subscribe_on_type("document-cell-update", value_update)
 
 @bp_document.route('/document/meta', methods=['GET'])
 @level_0_required
@@ -49,4 +66,17 @@ def document():
     except Exception as e:
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
         return json.dumps({"status": "error", "msg": str(e)})
+
+class Config(DatatableConfig):
+    def pre_sql_query(self):
+        return dl.document.pre_sql_query()
+
+    def pre_sql_filter(self, query, filters):
+        return dl.document.pre_sql_filter(query, filters)
+
+    def pre_sql_search(self, search):
+        return dl.document.pre_sql_search(search)
+
+config = Config("document", "Documenten")
+
 

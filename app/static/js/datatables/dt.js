@@ -84,7 +84,7 @@ const __filter_changed_cb = (id, value) => {
     if (ctx.server_side) datatable_reload_table();
 }
 
-export const datatables_init = ({context_menu_items = [], filter_menu_items = [], button_menu_items = [], callbacks = {}, initial_data = null}) => {
+export const datatables_init = ({context_menu_items = [], filter_menu_items = [], button_menu_items = [], callbacks = {}, initial_data = null, columns_clicked = []}) => {
     ctx = {table_config, reload_table: datatable_reload_table}
     ctx.cell_to_color = "color_keys" in table_config ? table_config.cell_color.color_keys : null;
     ctx.suppress_cell_content = "color_keys" in table_config ? table_config.cell_color.supress_cell_content : null;
@@ -254,6 +254,20 @@ export const datatables_init = ({context_menu_items = [], filter_menu_items = []
         __calc_column_shift();
         ctx.table.draw();
     });
+
+    // add eventhandlers in case on a column is clicked
+    if (columns_clicked) {
+        const columns = Object.fromEntries(columns_clicked.map(eh => [datatable_column2index[eh.column], eh]));
+        const column_cache = columns_clicked.map(eh => datatable_column2index[eh.column]);
+        ctx.table.on('click', "td", function () {
+            const cell = ctx.table.cell(this);
+            if (column_cache.includes(cell.index().column)) {
+                const column = columns[cell.index().column];
+                const row = ctx.table.row(cell.index().row).data();
+                column.cb(column.column, row);
+            }
+        });
+    }
 
     const update_cell_changed = data => {socketio.send_to_server(`${ctx.table_config.view}-cell-update`, data);}
 

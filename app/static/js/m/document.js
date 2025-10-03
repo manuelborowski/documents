@@ -81,7 +81,9 @@ $(document).ready(async function () {
                 cancelButtonText: `Annuleer `,
                 cancelButtonAriaLabel: "Thumbs down"
             })
-            if (result.isConfirmed) {
+            if (result.isDismissed) {
+                document_type = "stop";
+            } else if (result.isConfirmed) {
                 document_type = document.getElementById("document-type-select").value;
                 if (document_type !== "none") {
                     document.getElementById("document-field").click();

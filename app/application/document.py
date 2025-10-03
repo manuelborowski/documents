@@ -27,7 +27,7 @@ def add(username, document_type, files):
                 "document_type": document_type,
                 "name": file.filename,
                 "file_type": file.mimetype,
-                "co_account": int(co_account),
+                "co_account": student.co_account_1 if co_account == "1" else student.co_account_2,
                 "timestamp": datetime.datetime.now(),
                 "voornaam": student.voornaam,
                 "naam": student.naam,

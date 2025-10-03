@@ -90,6 +90,7 @@ default_configuration_settings = {
     'generic-new-via-smartschool': (True, Settings.SETTING_TYPE.E_BOOL),
     'user-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'student-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
+    'document-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'checkin-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'result-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'spare-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
