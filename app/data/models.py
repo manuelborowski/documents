@@ -59,6 +59,9 @@ def update_single(model, obj, data=None, commit=True, timestamp=False):
                 elif isinstance(expression_type, db.DateTime) and type(v) == str:
                     value = datetime.datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
                     setattr(obj, k, value)
+                elif isinstance(expression_type, db.Date) and type(v) == str:
+                    value = datetime.datetime.strptime(v, "%Y-%m-%d")
+                    setattr(obj, k, value)
         if timestamp:
             obj.timestamp = datetime.datetime.now()
         if commit:

@@ -18,7 +18,7 @@ def inject_defaults():
     return dict(version=f'@ 2025 MB. {version}', title=app.config['HTML_TITLE'], current_user=current_user)
 
 def send_alert_to_client(status, msg):
-    al.socketio.send_to_client({"type": "alert-popup", "data": {"data": msg, "status": status}})
+    al.socketio.send_to_client({"type": "alert-popup", "data": msg})
 
 # get data from the database and send back to the client.  Or send a message...
 def datatable_get_data(table_config, data):

@@ -13,8 +13,9 @@ from werkzeug.routing import IntegerConverter
 # 0.1 copy from stopwatch 0.16
 # 0.2: log in via s, upload document, take picture of document.
 # 0.3: added documents page
+# 0.4: first deployment
 
-version = "0.3"
+version = "0.4"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

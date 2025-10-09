@@ -1,8 +1,11 @@
 import {datatables_init} from "../datatables/dt.js";
 import {fetch_get} from "../common/common.js";
+import {AlertPopup} from "../common/popup.js";
+import {socketio} from "../common/socketio.js";
+
+const   meta = await fetch_get("document.meta");
 
 const __column_clicked_cb = async (column, row) => {
-    console.log(column, row);
     if (column === "name") {
         const data = await fetch_get("document.document", {id: row.id});
         if (data.file_type.includes("image")) {
@@ -33,16 +36,39 @@ const __column_clicked_cb = async (column, row) => {
             } else {
                 alert("Popup blocked! Please allow popups for this site.");
             }
+        } else if (data.file_type.includes("text")){ // default: download
+            const linkSource = `data:text/plain;base64,${data.file}`;
+            const downloadLink = document.createElement("a");
+            downloadLink.href = linkSource;
+            downloadLink.download = `${data.name}`;
+            downloadLink.click();
         } else { // default: download
             const linkSource = `data:application/pdf;base64,${data.file}`;
             const downloadLink = document.createElement("a");
             downloadLink.href = linkSource;
-            downloadLink.download = data.name;
+            downloadLink.download = `${data.naam} ${data.voornaam} ${data.klasgroep} ${data.timestamp}`;
             downloadLink.click();
         }
     }
 }
 
+const filter_menu_items = [
+    {
+        type: 'select',
+        id: 'school-select',
+        label: 'Deelschool',
+        options: [{value: "all", label: "Alle"}],
+        default: 'all',
+        persistent: true
+    },
+]
+
 $(document).ready(async function () {
-    datatables_init({columns_clicked: [{column: "name", cb: __column_clicked_cb}]});
+    filter_menu_items.forEach(i => {
+        if (i.id === "school-select") {
+            i.options = i.options.concat(meta.schools.map(s => ({value: s, label: s.toUpperCase()})));
+        }
+    });
+    socketio.subscribe_on_receive("alert-popup", (type, data) => new AlertPopup("warning", data, 4000));
+    datatables_init({filter_menu_items, columns_clicked: [{column: "name", cb: __column_clicked_cb}]});
 });

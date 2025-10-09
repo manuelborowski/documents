@@ -21,6 +21,7 @@ class Student(db.Model, SerializerMixin):
     informatnummer = db.Column(db.String(256), default='')
     co_account_1 = db.Column(db.String(256), default='')
     co_account_2 = db.Column(db.String(256), default='')
+    school = db.Column(db.String(256), default='')
 
     @property
     def schoolcode(self):
@@ -59,6 +60,9 @@ class Student(db.Model, SerializerMixin):
         else:
             jaar = self.klasgroep[0]
         return jaar
+
+    def co_account(self, nbr):
+        return self.co_account_1 if nbr == 1 else self.co_account_2
 
 def commit():
     return app.data.models.commit()
@@ -123,4 +127,7 @@ def pre_sql_search(search_string):
     search_constraints = []
     search_constraints.append(Student.naam.like(search_string))
     search_constraints.append(Student.voornaam.like(search_string))
+    search_constraints.append(Student.klasgroep.like(search_string))
+    search_constraints.append(Student.co_account_1.like(search_string))
+    search_constraints.append(Student.co_account_2.like(search_string))
     return search_constraints

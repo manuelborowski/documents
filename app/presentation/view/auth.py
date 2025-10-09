@@ -25,7 +25,7 @@ def login():
                 if not user:
                     log.error('Could not save timestamp')
                 # Ok, continue
-                return redirect(url_for('user.show'))
+                return redirect(url_for('student.show'))
             else:
                 log.error(f'{sys._getframe().f_code.co_name}: Invalid username/password')
                 message = {"status": "error", "data": "Ongeldig(e) gebruikersnaam/wachtwoord"}

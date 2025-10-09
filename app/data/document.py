@@ -7,8 +7,8 @@ from sqlalchemy import UnicodeText
 class Document(db.Model, SerializerMixin):
     __tablename__ = 'documents'
 
-    date_format = '%Y/%m/%d'
-    datetime_format = '%Y/%m/%d %H:%M:%S'
+    date_format = '%Y-%m-%d'
+    datetime_format = '%Y-%m-%d %H:%M:%S'
 
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(256), default='')
@@ -22,6 +22,11 @@ class Document(db.Model, SerializerMixin):
     username = db.Column(db.String(256), default='')
     roepnaam = db.Column(db.String(256), default='')
     klasgroep = db.Column(db.String(256), default='')
+    school = db.Column(db.String(256), default='')
+    processed = db.Column(db.Boolean, default=False)
+    from_day = db.Column(db.Date())
+    nbr_days = db.Column(db.Integer(), default=1)
+    schooljaar = db.Column(db.Integer(), default=2000)
 
 def commit():
     return app.data.models.commit()
@@ -53,12 +58,12 @@ def delete_m(ids=None, objs=None):
         ids = []
     return app.data.models.delete_multiple(Document, ids, objs)
 
-def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True):
+def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True, distinct=False):
     if filters is None:
         filters = []
     if fields is None:
         fields = []
-    return app.data.models.get_multiple(Document, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active)
+    return app.data.models.get_multiple(Document, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active, distinct=distinct)
 
 def get(filters=None):
     if filters is None:
@@ -70,6 +75,10 @@ def pre_sql_query():
     return db.session.query(Document)
 
 def pre_sql_filter(query, filters):
+    for f in filters:
+        if f['id'] == 'school-select':
+            if f['value'] != 'all':
+                query = query.filter(Document.school == f['value'])
     return query
 
 def pre_sql_search(search_string):

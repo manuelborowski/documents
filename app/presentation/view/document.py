@@ -13,16 +13,9 @@ log.addFilter(MyLogFilter())
 bp_document = Blueprint('document', __name__)
 
 @bp_document.route('/documentshow', methods=["GET"])
-@level_0_required
 @login_required
 def show():
     return render_template("document.html", table_config=config.create_table_config())
-
-@bp_document.route('/documentshowm', methods=["GET"])
-@level_0_required
-@login_required
-def showm():
-    return render_template("m/document.html")
 
 # invoked when the client requests data from the database
 al.socketio.subscribe_on_type("document-datatable-data", lambda type, data: datatable_get_data(config, data))
@@ -35,19 +28,12 @@ def value_update(type, data):
 al.socketio.subscribe_on_type("document-cell-update", value_update)
 
 @bp_document.route('/document/meta', methods=['GET'])
-@level_0_required
+@login_required
 def meta():
-    co_account = current_user.username[0]
-    username = current_user.username[1:]
-    student = dl.student.get(("username", "=", username))
-    if student:
-        documents = dl.document.get_m([("student_id", "=", student.id), ("co_account", "=", int(co_account))])
-        documents = [d.to_dict() for d in documents]
-    else:
-        documents = []
+    schools = dl.document.get_m(fields = ["school"], distinct=True)
+    schools = [s[0] for s in schools if s[0] != None]
     return json.dumps({
-        "current_user": current_user.to_dict(),
-        "documents": documents
+        "schools": schools
     })
 
 @bp_document.route('/document/document', methods=['POST', "GET"])
@@ -56,10 +42,7 @@ def document():
     try:
         ret = {}
         if request.method == "POST":
-            files = request.files.getlist("attachment_file")
-            document_type = request.form.get("document_type")
-            username = request.form.get("username")
-            al.document.add(username, document_type, files)
+            ret = al.document.add(request)
         if request.method == "GET":
             ret = al.document.get(request.args["id"])
         return json.dumps(ret)
@@ -79,4 +62,28 @@ class Config(DatatableConfig):
 
 config = Config("document", "Documenten")
 
+@bp_document.route('/documentshowm', methods=["GET"])
+@level_0_required
+@login_required
+def showm():
+    return render_template("m/document.html")
+
+@bp_document.route('/document/metam', methods=['GET'])
+@level_0_required
+def metam():
+    co_account_nbr = int(current_user.username[0])
+    username = current_user.username[1:]
+    student = dl.student.get(("username", "=", username))
+    if student:
+        documents = dl.document.get_m([("student_id", "=", student.id),
+                                       (f"co_account_{co_account_nbr}", "=", student.co_account(co_account_nbr)),
+                                        ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
+        documents = [d.to_dict() for d in documents]
+    else:
+        documents = []
+    return json.dumps({
+        "current_user": current_user.to_dict(),
+        "student": student.to_dict(),
+        "documents": documents,
+    })
 

@@ -19,3 +19,20 @@ def ini2timedelta(ini_string):
     except Exception as e:
         log.error(f'{sys._getframe().f_code.co_name}: {e}')
 
+# format returns the schoolyear in a certain format, e.g. for the schoolyear 2023-2024, format:
+# 1: return 2023
+# 2: return 2023-24 (string)
+# 3: return 2023-2024 (string)
+def get_current_schoolyear(format=1, schoolyear=None):
+    if schoolyear is None:
+        now = datetime.datetime.now()
+        # new schoolyear starts the first of july
+        schoolyear = now.year - 1 if now.month <= 6 else now.year
+    if format == 2:
+        return f"{schoolyear}-{(schoolyear - int(schoolyear / 100) * 100 + 1) % 100}"
+    elif format == 3:
+        return f"{schoolyear}-{schoolyear + 1}"
+    return schoolyear
+
+
+
