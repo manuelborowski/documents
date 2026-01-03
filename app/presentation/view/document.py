@@ -79,11 +79,10 @@ def metam():
                                        (f"co_account_{co_account_nbr}", "=", student.co_account(co_account_nbr)),
                                         ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
         documents = [d.to_dict() for d in documents]
-    else:
-        documents = []
-    return json.dumps({
-        "current_user": current_user.to_dict(),
-        "student": student.to_dict(),
-        "documents": documents,
-    })
+        return json.dumps({
+            "current_user": current_user.to_dict(),
+            "student": student.to_dict(),
+            "documents": documents,
+        })
+    return({"status": "warning", "msg": "Sorry, geen toegang!"})
 

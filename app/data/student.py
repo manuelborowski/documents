@@ -128,6 +128,7 @@ def pre_sql_search(search_string):
     search_constraints.append(Student.naam.like(search_string))
     search_constraints.append(Student.voornaam.like(search_string))
     search_constraints.append(Student.klasgroep.like(search_string))
+    search_constraints.append(Student.username.like(search_string))
     search_constraints.append(Student.co_account_1.like(search_string))
     search_constraints.append(Student.co_account_2.like(search_string))
     return search_constraints

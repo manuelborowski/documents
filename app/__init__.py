@@ -8,25 +8,30 @@ from flask_migrate import Migrate
 from flask_apscheduler import APScheduler
 from werkzeug.routing import IntegerConverter
 
-#Warning: update flask_jsglue.py: from markupsafe import Markup
+# Warning: update flask_jsglue.py: from markupsafe import Markup
 
 # 0.1 copy from stopwatch 0.16
 # 0.2: log in via s, upload document, take picture of document.
 # 0.3: added documents page
 # 0.4: first deployment
+# 0.5: add test student
 
-version = "0.4"
+version = "0.5"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
 #  enable logging
 top_log_handle = "DOCUMENTS"
 log = logging.getLogger(f"{top_log_handle}.{__name__}")
+
+
 # support custom filtering while logging
 class MyLogFilter(logging.Filter):
     def filter(self, record):
         record.username = current_user.username if current_user and current_user.is_active else 'NONE'
         return True
+
+
 log.addFilter(MyLogFilter())
 LOG_FILENAME = os.path.join(sys.path[0], f'log/documents.txt')
 log_level = getattr(logging, 'INFO')
@@ -39,6 +44,7 @@ log.addHandler(log_handler)
 log.info("START documents")
 
 from app.config import app_config
+
 config_name = os.getenv('FLASK_CONFIG')
 config_name = config_name if config_name else 'production'
 app.config.from_object(app_config[config_name])
@@ -47,7 +53,7 @@ app.config.from_pyfile('config.py')
 jsglue = JSGlue(app)
 db = SQLAlchemy()
 login_manager = LoginManager()
-db.app = app  #  hack:-(
+db.app = app  # hack:-(
 db.init_app(app)
 migrate = Migrate(app, db)
 
@@ -70,10 +76,29 @@ def default_db_entries():
                 if not find_user:
                     new_user = User(username=user[0], password=user[1], level=user[2], user_type=User.USER_TYPE.LOCAL)
                     db.session.add(new_user)
+            from app.data.student import Student
+            for student in app.config["DEFAULT_STUDENTS"]:
+                find_student = Student.query.filter(Student.username == student["username"]).first()
+                if not find_student:
+                    new_student = Student(
+                        voornaam=student["voornaam"],
+                        naam=student["naam"],
+                        username=student["username"],
+                        roepnaam=student["roepnaam"],
+                        geslacht=student["geslacht"],
+                        rfid=student["rfid"],
+                        klasgroep=student["klasgroep"],
+                        instellingsnummer=student["instellingsnummer"],
+                        informatnummer=student["informatnummer"],
+                        co_account_1=student["co_account_1"],
+                        co_account_2=student["co_account_2"],
+                        school=student["school"])
+                    db.session.add(new_student)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             log.error(f'{sys._getframe().f_code.co_name}: {e}')
+
 
 default_db_entries()
 
@@ -84,6 +109,7 @@ ap_scheduler.start()
 
 # Should be last to avoid circular import
 from app.presentation.view import auth, api, user, settings, student, document
+
 app.register_blueprint(auth.bp_auth)
 app.register_blueprint(api.bp_api)
 app.register_blueprint(user.bp_user)
