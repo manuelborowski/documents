@@ -15,8 +15,9 @@ from werkzeug.routing import IntegerConverter
 # 0.3: added documents page
 # 0.4: first deployment
 # 0.5: add test student
+# 0.6: improved popups.  Compress image
 
-version = "0.5"
+version = "0.6"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
