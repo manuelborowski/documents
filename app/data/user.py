@@ -9,9 +9,9 @@ import app.data.models
 class User(UserMixin, db.Model, SerializerMixin):
     __tablename__ = 'users'
 
-    date_format = '%d/%m/%Y'
-    datetime_format = '%d/%m/%Y %H:%M'
-    serialize_rules = ("-password_hash",)
+    date_format = '%Y-%m-%d'
+    datetime_format = '%Y-%m-%d %H:%M'
+    serialize_rules = ("-password_hash","-url_token")
 
     class USER_TYPE:
         LOCAL = 'local'
@@ -23,7 +23,6 @@ class User(UserMixin, db.Model, SerializerMixin):
     }
 
     level_label = {
-        0: "Gast",
         1: "Gebruiker",
         2: "Gebruiker+",
         3: "Secretariaat",
@@ -37,9 +36,12 @@ class User(UserMixin, db.Model, SerializerMixin):
     first_name = db.Column(db.String(256))
     last_name = db.Column(db.String(256))
     password_hash = db.Column(db.String(256))
-    level = db.Column(db.Integer, default= -1)
+    url_token = db.Column(db.String(256), default=None)
+    level = db.Column(db.Integer)
     user_type = db.Column(db.String(256))
     last_login = db.Column(db.DateTime())
+    rfid = db.Column(db.String(256), default=None)
+    pin = db.Column(db.String(256), default=None)
 
     @property
     def is_local(self):
@@ -48,10 +50,6 @@ class User(UserMixin, db.Model, SerializerMixin):
     @property
     def is_oauth(self):
         return self.user_type == User.USER_TYPE.OAUTH
-
-    @property
-    def is_at_least_level_0(self):
-        return self.level >= 0
 
     @property
     def is_at_least_user(self):
@@ -68,6 +66,10 @@ class User(UserMixin, db.Model, SerializerMixin):
     @property
     def is_at_least_level_3(self):
         return self.level >= 3
+
+    @property
+    def is_at_least_level_4(self):
+        return self.level >= 4
 
     @property
     def is_at_least_level_5(self):
@@ -94,38 +96,22 @@ class User(UserMixin, db.Model, SerializerMixin):
     def log(self):
         return '<User: {}/{}>'.format(self.id, self.username)
 
-def commit():
-    return app.data.models.commit()
-
 def add(data=None):
     if data is None:
         data = {}
     if 'password' in data:
         data['password_hash'] = generate_password_hash(data['password'])
-    return dl.models.add_single(User, data)
+    return dl.models.add(User, data)
 
 def update(user, data=None):
     if data is None:
         data = {}
     if 'password' in data:
         data['password_hash'] = generate_password_hash(data['password'])
-    return dl.models.update_single(User, user, data)
-
-def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True):
-    if filters is None:
-        filters = []
-    if fields is None:
-        fields = []
-    return dl.models.get_multiple(User, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active)
-
-def get(filters=None):
-    if filters is None:
-        filters = []
-    return dl.models.get_first_single(User, filters)
+    return dl.models.update(User, user, data)
 
 def delete(ids=None):
-    return dl.models.delete_multiple(User, ids=ids)
-
+    return dl.models.delete_m(User, ids=ids)
 
 ############ user overview list #########
 def filter(query_in):
@@ -140,10 +126,8 @@ def load_user(user_id):
     user = User.query.get(int(user_id))
     return user
 
-
 def pre_sql_query():
     return db.session.query(User)
-
 
 def pre_sql_filter(query, filters):
     for f in filters:
@@ -154,7 +138,6 @@ def pre_sql_filter(query, filters):
             if f['value'] != 'all':
                 query = query.filter(User.level == f['value'])
     return query
-
 
 def pre_sql_search(search_string):
     search_constraints = []

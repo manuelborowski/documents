@@ -14,7 +14,9 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
               crossorigin="anonymous">
         <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
-        <link rel="shortcut icon" href="static/img/documents.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.23.0/dist/sweetalert2.min.css"
+          integrity="sha256-RHjk4NC06Gzv9DRXsogGrVjIZOc71LxqhydWMwMDhEU=" crossorigin="anonymous">
+        <link rel="shortcut icon" href="static/img/{{ logo }}">
         <link href="static/css/main.css" rel="stylesheet">
         <link href="static/css/button.css" rel="stylesheet">
         <link href="static/css/filter.css" rel="stylesheet">
@@ -30,19 +32,20 @@
     <div>
         <div>
             <img src="{{ url_for('static', filename='img/warning.png') }}" alt="" height="40" style="visibility: hidden">
-            <img src="{{ url_for('static', filename='img/documents.png') }}" alt="" height="40">
+            <img src="static/img/{{ logo }}" alt="" height="40">
             {% if current_user.is_authenticated %}
                 <ul id="navbar"></ul>
             {% endif %}
         </div>
         <h2 style="white-space: nowrap;margin-bottom: 0">{{ current_user.username }}&nbsp;&nbsp;</h2>
-        <a href="{{ url_for('auth.logout') }}">
-            <button class="btn btn-success navbar-btn">Logout</button>
-        </a>&nbsp;&nbsp;
-
+        {% if not kiosk_mode %}
+            <a href="{{ url_for('auth.logout') }}">
+                <button class="btn btn-success navbar-btn">Logout</button>
+            </a>&nbsp;&nbsp;
+        {% endif %}
     </div>
     <div>
-        <div class="button-menu-placeholder"></div>
+        <div class="action-menu-placeholder"></div>
     </div>
     <div>
         <div class="filter-menu-placeholder"></div>
@@ -69,6 +72,8 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/6.0.0/bootbox.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script src='https://cdn.form.io/js/5.0.0/formio.full.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.23.0/dist/sweetalert2.all.min.js"
+            integrity="sha256-+kMpHtNaVp0Vv0B9iX7tymEm7qv+6ASnck0/uuMeYNA=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"
             integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ=="
             crossorigin="anonymous"></script>
@@ -76,6 +81,8 @@
     <script>
         const current_user = {level: {{(current_user.level or null)|tojson}}, username: {{(current_user.username or null)|tojson }}};
         const suppress_navbar = {{ (suppress_navbar or False)|tojson}};
+        const enable_server_heartbeat = {{ (enable_server_heartbeat or False)|tojson}};
+        const logout_idle_time = {{ (logout_idle_time or 0)|tojson}};
     </script>
     <script type="module">
         import {socketio} from "../../static/js/common/socketio.js";

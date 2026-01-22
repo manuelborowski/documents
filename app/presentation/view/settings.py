@@ -4,7 +4,7 @@ from flask_login import login_required
 from app import data as dl, application as al
 from app.presentation.view import fetch_return_error, level_5_required
 from app.application import cron_table
-import json, sys
+import json, inspect
 
 # logging on file level
 import logging
@@ -16,16 +16,15 @@ log.addFilter(MyLogFilter())
 bp_settings = Blueprint('settings', __name__)
 
 @bp_settings.route('/settingsshow', methods=['GET'])
-@level_5_required
 @login_required
+@level_5_required
 def show():
-    cron_module_enable_settings = dl.settings.get_configuration_setting('cron-enable-modules')
-    return render_template('settings.html', data=[])
+    return render_template('settings.html')
 
 
 @bp_settings.route('/setting', methods=['GET', 'UPDATE'])
-@level_5_required
 @login_required
+@level_5_required
 def setting():
     try:
         ret = {}
@@ -36,12 +35,12 @@ def setting():
             ret = al.settings.get()
         return json.dumps(ret)
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return fetch_return_error()
 
 @bp_settings.route('/button', methods=['POST'])
-@level_5_required
 @login_required
+@level_5_required
 def button():
     try:
         ret = {}
@@ -50,11 +49,12 @@ def button():
             al.settings.button(data["id"])
         return json.dumps(ret)
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return fetch_return_error()
 
 @bp_settings.route('/setting/meta', methods=['GET'])
 @login_required
+@level_5_required
 def meta():
     user_level_label = dl.user.User.level_label
     user_level_option =[{"value": k, "label": v} for k, v in user_level_label.items()]

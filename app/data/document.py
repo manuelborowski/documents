@@ -34,41 +34,41 @@ def commit():
 def add(data=None, commit=True):
     if data is None:
         data = {}
-    return app.data.models.add_single(Document, data, commit)
+    return app.data.models.add(Document, data, commit)
 
 def add_m(data=None):
     if data is None:
         data = []
-    return app.data.models.add_multiple(Document, data, )
+    return app.data.models.add_m(Document, data, )
 
 def update(obj, data=None, commit=True):
     if data is None:
         data = {}
-    return app.data.models.update_single(Document, obj, data, commit)
+    return app.data.models.update(Document, obj, data, commit)
 
 def update_m(data=None):
     if data is None:
         data = []
-    return app.data.models.update_multiple(Document, data)
+    return app.data.models.update_m(Document, data)
 
 def delete_m(ids=None, objs=None):
     if objs is None:
         objs = []
     if ids is None:
         ids = []
-    return app.data.models.delete_multiple(Document, ids, objs)
+    return app.data.models.delete_m(Document, ids, objs)
 
 def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True, distinct=False):
     if filters is None:
         filters = []
     if fields is None:
         fields = []
-    return app.data.models.get_multiple(Document, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active, distinct=distinct)
+    return app.data.models.get_m(Document, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active, distinct=distinct)
 
 def get(filters=None):
     if filters is None:
         filters = []
-    return app.data.models.get_first_single(Document, filters)
+    return app.data.models.get(Document, filters)
 
 ############ obj overview list #########
 def pre_sql_query():

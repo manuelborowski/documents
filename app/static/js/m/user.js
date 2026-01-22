@@ -1,0 +1,11 @@
+import {fetch_get} from "../../../../../template/app/static/js/common/common.js";
+import {base_init} from "./base.js";
+
+$(document).ready(async () => {
+    const users = await fetch_get("user.user");
+    const user_list = document.getElementById("user-list");
+    for (const user of users) {
+        user_list.innerHTML += `${user.username} ${user.last_name} ${user.first_name} <br>`
+    }
+    base_init();
+});

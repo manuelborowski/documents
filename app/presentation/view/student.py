@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required
-
 from app.data.datatables import DatatableConfig
 from app import data as dl, application as al
-from app.presentation.view import datatable_get_data, fetch_return_error, level_3_required
-import json, sys
+from app.presentation.view import datatable_get_data, level_3_required
+from app.data.settings import get_configuration_setting
+import json, inspect, io
 
 #logging on file level
 import logging
@@ -13,52 +13,47 @@ log = logging.getLogger(f"{top_log_handle}.{__name__}")
 log.addFilter(MyLogFilter())
 bp_student = Blueprint('student', __name__)
 
-@bp_student.route('/studentshow', methods=['GET', 'POST'])
+@bp_student.route('/studentshow', methods=['GET'])
 @level_3_required
 @login_required
 def show():
-    return render_template("student.html", table_config=config.create_table_config())
+    return render_template("project/student.html", table_config=config.create_table_config())
 
-# invoked when the client requests data from the database
-al.socketio.subscribe_on_type("student-datatable-data", lambda type, data: datatable_get_data(config, data))
-
-@bp_student.route('/student', methods=["POST", "UPDATE", "DELETE", "GET"])
+@bp_student.route('/student/dt', methods=['POST'])
 @level_3_required
 @login_required
-def student():
-    ret = {}
-    if request.method == "GET":
-        ret = al.models.get(dl.student.Student, request.args)
-    if request.method == "UPDATE":
-        data = json.loads(request.data)
-        ret = al.student.update(data)
-    return json.dumps(ret)
+def dt():
+    params = json.loads(request.data)
+    return datatable_get_data(config, params)
 
 @bp_student.route('/student/meta', methods=['GET'])
 @level_3_required
 @login_required
 def meta():
-    return json.dumps({})
+    location = get_configuration_setting("location-profiles")
+    return json.dumps({
+        "location": location,
+    })
 
+@bp_student.route('/student', methods=["UPDATE"])
+@level_3_required
+@login_required
+def student():
+    if request.method == "UPDATE":
+        ret = al.student.update(json.loads(request.data))
+        return json.dumps(ret)
+    log.error(f'{inspect.currentframe().f_code.co_name}:  incorrect request method {request.method}')
+    return json.dumps({"status": "error", "msg": f"Verkeerde request methode: {request.method}"})
 
 class Config(DatatableConfig):
     def pre_sql_query(self):
         return dl.student.pre_sql_query()
 
-    def pre_sql_filter(self, query, filters):
-        return dl.student.pre_sql_filter(query, filters)
+    def pre_sql_filter(self, q, filters):
+        return dl.student.pre_sql_filter(q, filters)
 
     def pre_sql_search(self, search):
         return dl.student.pre_sql_search(search)
-
-    def format_data(self, db_list, total_count=None, filtered_count=None):
-        return al.student.format_data(db_list, total_count, filtered_count)
-
-    def post_sql_order(self, l, on, direction):
-        return al.student.post_sql_order(l, on, direction)
-
-    def post_sql_filter(self, l, filter, count):
-        return al.student.post_sql_filter(l, filter, count)
 
 config = Config("student", "Studenten")
 

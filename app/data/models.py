@@ -1,15 +1,15 @@
 from app import log, db
 from sqlalchemy import text, desc, func
-import sys, datetime
+import inspect, datetime
 
 def commit():
     try:
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
 
-def add_single(model, data=None, commit=True, timestamp=False):
+def add(model, data=None, commit=True, timestamp=False):
     if data is None:
         data = {}
     try:
@@ -30,22 +30,22 @@ def add_single(model, data=None, commit=True, timestamp=False):
         return obj
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
-def add_multiple(model, data=None, timestamp=False):
+def add_m(model, data=None, timestamp=False):
     if data is None:
         data = []
     try:
         for d in data:
-            add_single(model, d, commit=False, timestamp=timestamp)
+            add(model, d, commit=False, timestamp=timestamp)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
-def update_single(model, obj, data=None, commit=True, timestamp=False):
+def update(model, obj, data=None, commit=True, timestamp=False):
     if data is None:
         data = {}
     try:
@@ -59,9 +59,6 @@ def update_single(model, obj, data=None, commit=True, timestamp=False):
                 elif isinstance(expression_type, db.DateTime) and type(v) == str:
                     value = datetime.datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
                     setattr(obj, k, value)
-                elif isinstance(expression_type, db.Date) and type(v) == str:
-                    value = datetime.datetime.strptime(v, "%Y-%m-%d")
-                    setattr(obj, k, value)
         if timestamp:
             obj.timestamp = datetime.datetime.now()
         if commit:
@@ -69,28 +66,42 @@ def update_single(model, obj, data=None, commit=True, timestamp=False):
         return obj
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
-def update_multiple(model, data=None, timestamp=False):
+def update_m(model, data=None, timestamp=False):
     if data is None:
         data = []
     try:
         for d in data:
             item = d["item"]
             del (d["item"])
-            update_single(model, item, d, commit=False, timestamp=timestamp)
+            update(model, item, d, commit=False, timestamp=timestamp)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
-def delete_multiple(model, ids=None, objs=None):
-    if ids is None:
-        ids = []
+def delete(model, id=None, obj=None):
+    try:
+        if obj:
+                db.session.delete(obj)
+        if id:
+            obj = model.query.filter(model.id==id).first()
+            if obj:
+                db.session.delete(obj)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
+    return None
+
+def delete_m(model, ids=None, objs=None):
     if objs is None:
         objs = []
+    if ids is None:
+        ids = []
     try:
         if objs:
             for obj in objs:
@@ -102,15 +113,25 @@ def delete_multiple(model, ids=None, objs=None):
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
+    return None
+
+def get(model, filters=None, order_by=None):
+    if filters is None:
+        filters = []
+    try:
+        obj = get_m(model, filters, order_by=order_by, first=True)
+        return obj
+    except Exception as e:
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
 # filters is list of tupples: [(key, operator, value), ...]
-def get_multiple(model, filters=None, fields=None, order_by=None, first=False, count=False, active=True, start=None, stop=None, distinct=False):
-    if filters is None:
-        filters = []
+def get_m(model, filters=None, fields=None, order_by=None, first=False, count=False, active=True, start=None, stop=None, distinct=False):
     if fields is None:
         fields = []
+    if filters is None:
+        filters = []
     try:
         tablename = model.__tablename__
         entities = [text(f'{tablename}.{f}') for f in fields]
@@ -162,15 +183,9 @@ def get_multiple(model, filters=None, fields=None, order_by=None, first=False, c
         objs = q.all()
         return objs
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         raise e
 
-def get_first_single(model, filters=None, order_by=None):
-    if filters is None:
-        filters = []
-    try:
-        obj = get_multiple(model, filters, order_by=order_by, first=True)
-        return obj
-    except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
-    return None
+def get_columns(model):
+    return [p for p in dir(model) if not p.startswith('_')]
+

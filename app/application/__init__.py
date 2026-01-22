@@ -1,4 +1,4 @@
-__all__ = ["user", "socketio", "datatables", "common", "settings", "student.py", "cron", "models", "document"]
+__all__ = ["user", "socketio", "datatables", "common", "settings", "student", "cron", "models", "document"]
 
 import app.application.user
 import app.application.socketio

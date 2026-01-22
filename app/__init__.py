@@ -16,8 +16,9 @@ from werkzeug.routing import IntegerConverter
 # 0.4: first deployment
 # 0.5: add test student
 # 0.6: improved popups.  Compress image
+# 0.6-template-0.25-0.1: updated architecture to template-0.25
 
-version = "0.6"
+version = "0.6-template-0.25-0.1"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -50,6 +51,7 @@ config_name = os.getenv('FLASK_CONFIG')
 config_name = config_name if config_name else 'production'
 app.config.from_object(app_config[config_name])
 app.config.from_pyfile('config.py')
+app.config["RUN_MODE"] = config_name
 
 jsglue = JSGlue(app)
 db = SQLAlchemy()

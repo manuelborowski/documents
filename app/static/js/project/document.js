@@ -7,7 +7,7 @@ const   meta = await fetch_get("document.meta");
 
 const __column_clicked_cb = async (column, row) => {
     if (column === "name") {
-        const data = await fetch_get("document.document", {id: row.id});
+        const data = await fetch_get("document.document", {filters: `id$=$${row.id}`});
         if (data.file_type.includes("image")) {
             const base64_image = `data:${data.file_type};base64, ` + data.file;
             const new_tab = window.open();

@@ -159,6 +159,9 @@ export class BForms {
                             tag = document.createElement("select");
                         } else if (element.type === "input") {
                             tag = document.createElement("input");
+                        } else if (element.type === "date") {
+                            tag = document.createElement("input");
+                            tag.type = "date"
                         }
                         if (tag) {
                             label.appendChild(span);
@@ -167,6 +170,9 @@ export class BForms {
                                 if (format === "vertical-center") {
                                     label.classList.add("vertical-center-label");
                                     tag.classList.add("vertical-center-element");
+                                }
+                                else if (format === "label-top") {
+                                    label.classList.add("top");
                                 }
                             }
                             if ("typecast" in element) this.typecasts.push({name: element.name, typecast: element.typecast});

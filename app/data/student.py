@@ -70,41 +70,41 @@ def commit():
 def add(data=None, commit=True):
     if data is None:
         data = {}
-    return app.data.models.add_single(Student, data, commit)
+    return app.data.models.add(Student, data, commit)
 
 def add_m(data=None):
     if data is None:
         data = []
-    return app.data.models.add_multiple(Student, data, )
+    return app.data.models.add_m(Student, data, )
 
 def update(obj, data=None, commit=True):
     if data is None:
         data = {}
-    return app.data.models.update_single(Student, obj, data, commit)
+    return app.data.models.update(Student, obj, data, commit)
 
 def update_m(data=None):
     if data is None:
         data = []
-    return app.data.models.update_multiple(Student, data)
+    return app.data.models.update_m(Student, data)
 
 def delete_m(ids=None, objs=None):
     if ids is None:
         ids = []
     if objs is None:
         objs = []
-    return app.data.models.delete_multiple(Student, ids, objs)
+    return app.data.models.delete_m(Student, ids, objs)
 
 def get_m(filters=None, fields=None, order_by=None, first=False, count=False, active=True):
     if filters is None:
         filters = []
     if fields is None:
         fields = []
-    return app.data.models.get_multiple(Student, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active)
+    return app.data.models.get_m(Student, filters=filters, fields=fields, order_by=order_by, first=first, count=count, active=active)
 
 def get(filters=None):
     if filters is None:
         filters = []
-    return app.data.models.get_first_single(Student, filters)
+    return app.data.models.get(Student, filters)
 
 def get_klasgroepen():
     try:

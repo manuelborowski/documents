@@ -1,5 +1,5 @@
 from app import data as dl
-import datetime, sys
+import datetime, inspect
 
 #logging on file level
 import logging
@@ -17,7 +17,7 @@ def ini2timedelta(ini_string):
         init_format = ['days', 'hours', 'minutes', 'seconds']
         return datetime.timedelta(**{k: v for k, v in zip(init_format, [int(i) for i in ini_string.split(",")])})
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
 
 # format returns the schoolyear in a certain format, e.g. for the schoolyear 2023-2024, format:
 # 1: return 2023
@@ -33,6 +33,3 @@ def get_current_schoolyear(format=1, schoolyear=None):
     elif format == 3:
         return f"{schoolyear}-{schoolyear + 1}"
     return schoolyear
-
-
-

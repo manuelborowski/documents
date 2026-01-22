@@ -1,13 +1,13 @@
 from flask import request, Blueprint
 from app import log, app, data as dl, application as al
-import json, sys, html
+import json, inspect, html, datetime
 from functools import wraps
 from flask_login import login_user, logout_user
 
 bp_api = Blueprint('api', __name__)
 
 with app.app_context():
-    user_api = dl.user.get(("username", "=", "api"))
+    user_api = dl.models.get(dl.user.User,("username", "=", "api"))
 
 def api_core(api_level, func, *args, **kwargs):
     try:
@@ -38,7 +38,7 @@ def api_core(api_level, func, *args, **kwargs):
         log.error(f'{func.__name__}: key not valid')
         return json.dumps({"status": False, "data": "key not valid"})
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return json.dumps({"status": False, "data": f"{html.escape(str(type(e)))}, {html.escape(str(e))}"})
 
 def level_1(func):
@@ -59,25 +59,11 @@ def level_5(func):
         return api_core(5, func, *args, **kwargs)
     return wrapper
 
-@bp_api.route('/api/registration/add', methods=['POST'])
+# timestamp changes only when the server is rebooted
+hb_timestamp = int(datetime.datetime.now().timestamp())
 @level_1
-def registration_add(*args, **kwargs):
-    client_ip = kwargs['remote_ip'] if 'remote_ip' in kwargs else None
-    data = json.loads(request.data)
-    rfid_code = data["badge_code"].upper() if "badge_code" in data else None
-    leerlingnummer = data["leerlingnummer"] if "leerlingnummer" in data else None
-    location = data["location_key"].replace("--SLASH--", "/")
-    timestamp = data["timestamp"] if "timestamp" in data else None
-    ret = al.student.registration_add(location, timestamp, leerlingnummer, rfid_code)
-    for item in ret:
-        if item["to"] == "ip" and client_ip:
-            al.socketio.send_to_room(item, client_ip)
-        elif item["to"] == "location":
-            al.socketio.send_to_room(item, location)
-        elif item["to"] == "broadcast":
-            al.socketio.broadcast_message(item)
-        else:
-            log.error(f'{sys._getframe().f_code.co_name}: No valid "to" parameter: {item["to"]}')
-            return json.dumps({"status": False, "data": f'No valid "to" parameter: {item["to"]}'})
-    return json.dumps({"status": True})
+@bp_api.route('/api/hb', methods=['GET'])
+def hb():
+    ret = {"hb": hb_timestamp}
+    return json.dumps(ret)
 

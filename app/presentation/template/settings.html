@@ -1,26 +1,13 @@
 {% extends "base.html" %}
-{% block body %}
+{% block styles %}
     {{ super() }}
     <link href="static/css/form.css" rel="stylesheet">
-    <div class="content-section">
-        <div class="center container-form">
-        </div>
-    </div>
-    <style>
-        .card-header, .form-control, .btn {
-            padding: 0;
-        }
-
-        .form-group {
-            margin: 0;
-        }
-    </style>
+{% endblock %}
+{% block body %}
+    <div class="container-form"></div>
 {% endblock %}
 
 {% block scripts %}
     {{ super() }}
-    <script>
-        var data = {{ data | tojson }}
-    </script>
-    <script type="module" src="/static/js/project/settings.js"></script>
+    <script type="module" src="/static/js/settings.js"></script>
 {% endblock %}

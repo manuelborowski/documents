@@ -138,14 +138,14 @@ def add(request):
         return {"status": "error", "msg": str(e)}
 
 
-def get(id):
+def get(request):
+    documents = []
     try:
-        data = None
-        document = dl.document.get(("id", "=", id))
-        data = document.to_dict()
-        with open(f"documents/{document.name}", "rb") as file:
-            data["file"] = base64.b64encode(file.read()).decode('utf-8')
-        return data
+        documents = al.models.get(dl.document.Document, request.args)
+        for document in documents:
+            with open(f"documents/{document["name"]}", "rb") as file:
+                document["file"] = base64.b64encode(file.read()).decode('utf-8')
+        return documents
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {data}, {e}')
+        log.error(f'{sys._getframe().f_code.co_name}: {documents}, {e}')
         return {"status": "error", "msg": {str(e)}}

@@ -12,6 +12,7 @@ class DatatableConfig:
     suppress_cell_content = None
     enable_column_visible_selector = True
     enable_persistent_filter_settings = True
+    width = "100%"
 
     def show_filter_elements(self):
         return []
@@ -67,6 +68,7 @@ class DatatableConfig:
             "suppress_cell_content": self.suppress_cell_content,
             "title": self.title,
             "view": self.view,
+            "width": self.width,
         }
 
     def pre_sql_standard_order(self, q, on, direction):

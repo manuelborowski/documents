@@ -85,20 +85,22 @@ export class Rfid {
     static __check_state_timer = async () => {
         try {
             var timeout = 2;
-            const ret = await fetch(`${Rfid.__api_url}/serial_port`, { signal: AbortSignal.timeout(2000) });
-            const status = await ret.json();
-            const operational_state = status.port !== "";
-            if (operational_state !== Rfid.__operational_state) {
-                Rfid.__operational_state = operational_state;
-                Rfid.__connected_state= true;
-                Rfid.__process_state_change();
+            if (Rfid.__api_url) {
+                const ret = await fetch(`${Rfid.__api_url}/serial_port`, {signal: AbortSignal.timeout(2000)});
+                const status = await ret.json();
+                const operational_state = status.port !== "";
+                if (operational_state !== Rfid.__operational_state) {
+                    Rfid.__operational_state = operational_state;
+                    Rfid.__connected_state = true;
+                    Rfid.__process_state_change();
+                }
             }
         } catch (e) {
-            Rfid.__connected_state= false;
+            Rfid.__connected_state = false;
             Rfid.__operational_state = false;
             Rfid.__process_state_change();
             timeout = 5;
         }
-        setTimeout( Rfid.__check_state_timer, timeout * 1000);
+        setTimeout(Rfid.__check_state_timer, timeout * 1000);
     }
 }

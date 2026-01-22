@@ -1,6 +1,6 @@
-import {fetch_get, fetch_post} from "../common/common.js";
+import {fetch_get, fetch_post} from "../../common/common.js";
 import {ResizeImage} from "./image.js";
-import {AlertPopup} from "../common/popup.js";
+import {AlertPopup} from "../../common/popup.js";
 
 const OUDERATTEST_MAX_NBR = 4;      // max 4 per schoolyear
 const OUDERATTEST_CONSECUTIVE = 3;  // max 3 consecutive days absent
@@ -9,7 +9,7 @@ $(document).ready(async function () {
     const document_list = document.getElementById("document-list");
     const student_div = document.getElementById("student-div");
     const new_document_btn = document.getElementById("new-document-btn");
-    const meta = await fetch_get("document.metam");
+    const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.first_name} ${meta.current_user.last_name}`
     const ctx = {ouderattest: {days: 0}};
 
@@ -26,22 +26,24 @@ $(document).ready(async function () {
 
     const __show_document_content = async event => {
         const div = event.target.closest("div");
-        const data = await fetch_get("document.document", {id: div.dataset.id});
-        if (data.file_type.includes("image")) {
-            const base64_image = `data:${data.file_type};base64, ` + data.file;
-            const new_tab = window.open();
-            if (new_tab) {
-                new_tab.document.write(`<img src="${base64_image}" alt="Base64 Image">`);
-                new_tab.document.write(`<title>${data.name}</title>`);
-            } else {
-                alert("Popup blocked! Please allow popups for this site.");
-            }
-        } else if (data.file_type.includes("video")) {
-            const new_tab = window.open();
-            if (new_tab) {
-                const base64_mp4 = `data:${data.file_type};base64, ` + data.data.file;
-                new_tab.document.write(`<title>${data.name}</title>`);
-                new_tab.document.write(`
+        const documents = await fetch_get("document.document", {filters: `id$=$${div.dataset.id}`});
+        if (documents.length > 0) {
+            const data = documents[0];
+            if (data.file_type.includes("image")) {
+                const base64_image = `data:${data.file_type};base64, ` + data.file;
+                const new_tab = window.open();
+                if (new_tab) {
+                    new_tab.document.write(`<img src="${base64_image}" alt="Base64 Image">`);
+                    new_tab.document.write(`<title>${data.name}</title>`);
+                } else {
+                    alert("Popup blocked! Please allow popups for this site.");
+                }
+            } else if (data.file_type.includes("video")) {
+                const new_tab = window.open();
+                if (new_tab) {
+                    const base64_mp4 = `data:${data.file_type};base64, ` + data.data.file;
+                    new_tab.document.write(`<title>${data.name}</title>`);
+                    new_tab.document.write(`
                                 <html>
                                   <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-color:#000;">
                                     <video controls autoplay style="max-width:100%; max-height:100vh;">
@@ -51,22 +53,23 @@ $(document).ready(async function () {
                                   </body>
                                 </html>
                               `);
-                new_tab.document.close();
-            } else {
-                alert("Popup blocked! Please allow popups for this site.");
+                    new_tab.document.close();
+                } else {
+                    alert("Popup blocked! Please allow popups for this site.");
+                }
+            } else if (data.file_type.includes("text")) { // default: download
+                const linkSource = `data:text/plain;base64,${data.file}`;
+                const downloadLink = document.createElement("a");
+                downloadLink.href = linkSource;
+                downloadLink.download = `${data.name}`;
+                downloadLink.click();
+            } else { // default: download
+                const linkSource = `data:application/pdf;base64,${data.file}`;
+                const downloadLink = document.createElement("a");
+                downloadLink.href = linkSource;
+                downloadLink.download = `${data.naam} ${data.voornaam} ${data.klasgroep} ${data.timestamp}`;
+                downloadLink.click();
             }
-        } else if (data.file_type.includes("text")) { // default: download
-            const linkSource = `data:text/plain;base64,${data.file}`;
-            const downloadLink = document.createElement("a");
-            downloadLink.href = linkSource;
-            downloadLink.download = `${data.name}`;
-            downloadLink.click();
-        } else { // default: download
-            const linkSource = `data:application/pdf;base64,${data.file}`;
-            const downloadLink = document.createElement("a");
-            downloadLink.href = linkSource;
-            downloadLink.download = `${data.naam} ${data.voornaam} ${data.klasgroep} ${data.timestamp}`;
-            downloadLink.click();
         }
     }
 
