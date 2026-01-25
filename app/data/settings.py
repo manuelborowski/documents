@@ -87,6 +87,7 @@ default_configuration_settings = {
     'mobile-login-pin': ('', Settings.SETTING_TYPE.E_STRING),
 
     'user-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
+    'coaccount-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'document-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
     'student-datatables-template': ({}, Settings.SETTING_TYPE.E_YAML),
 

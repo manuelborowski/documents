@@ -17,8 +17,7 @@ class Document(db.Model, SerializerMixin):
     document_type = db.Column(db.String(256), default='')
     info = db.Column(UnicodeText, default="")
     timestamp = db.Column(db.DateTime())
-    voornaam = db.Column(db.String(256), default='')
-    naam = db.Column(db.String(256), default='')
+    naam_voornaam = db.Column(db.String(256), default='')
     username = db.Column(db.String(256), default='')
     roepnaam = db.Column(db.String(256), default='')
     klasgroep = db.Column(db.String(256), default='')
@@ -84,8 +83,7 @@ def pre_sql_filter(query, filters):
 def pre_sql_search(search_string):
     search_constraints = []
     search_constraints.append(Document.name.like(search_string))
-    search_constraints.append(Document.voornaam.like(search_string))
-    search_constraints.append(Document.naam.like(search_string))
+    search_constraints.append(Document.naam_voornaam.like(search_string))
     search_constraints.append(Document.info.like(search_string))
     search_constraints.append(Document.timestamp.like(search_string))
     search_constraints.append(Document.co_account.like(search_string))

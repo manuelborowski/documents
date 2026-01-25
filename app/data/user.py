@@ -4,7 +4,6 @@ from flask_login import current_user
 from app import db, log
 from sqlalchemy_serializer import SerializerMixin
 from app import data as dl
-import app.data.models
 
 class User(UserMixin, db.Model, SerializerMixin):
     __tablename__ = 'users'

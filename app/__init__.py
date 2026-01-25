@@ -17,8 +17,9 @@ from werkzeug.routing import IntegerConverter
 # 0.5: add test student
 # 0.6: improved popups.  Compress image
 # 0.6-template-0.25-0.1: updated architecture to template-0.25
+# 0.6-template-0.25-0.2: users and coaccounts are different tables.
 
-version = "0.6-template-0.25-0.1"
+version = "0.6-template-0.25-0.2"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -111,7 +112,7 @@ ap_scheduler.init_app(app)
 ap_scheduler.start()
 
 # Should be last to avoid circular import
-from app.presentation.view import auth, api, user, settings, student, document
+from app.presentation.view import auth, api, user, settings, student, document, coaccount
 
 app.register_blueprint(auth.bp_auth)
 app.register_blueprint(api.bp_api)
@@ -119,3 +120,4 @@ app.register_blueprint(user.bp_user)
 app.register_blueprint(settings.bp_settings)
 app.register_blueprint(student.bp_student)
 app.register_blueprint(document.bp_document)
+app.register_blueprint(coaccount.bp_account)

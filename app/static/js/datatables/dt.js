@@ -302,7 +302,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
     });
 
     const __cell_edit_changed_cb = async ($dt_row, column_index, new_value, old_value) => {
-        const value = ctx.config.template[column_index].celledit.value_type === 'int' ? parseInt(new_value) : new_value;
+        const value = ctx.config.template[column_index].celledit.value_type === 'int' ? parseInt(new_value) : new_value; // deprecated, user type "int" and new_value is of type int
         const column_name = ctx.table.column(column_index).dataSrc()
         // update_cell_changed({id: $dt_row.data().DT_RowId, column: column_name, value});
         await fetch_update(`${ctx.config.view}.${ctx.config.view}`, {id: $dt_row.data().DT_RowId, [column_name]: value});

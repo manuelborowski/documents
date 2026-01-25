@@ -34,11 +34,9 @@ def meta():
     user_agent_str = request.headers.get('User-Agent')
     user_agent = parse(user_agent_str)
     if user_agent.is_mobile:
-        co_account_nbr = int(current_user.username[0])
-        username = current_user.username[1:]
-        student = dl.student.get(("username", "=", username))
+        student = dl.student.get(("username", "=", current_user.username))
         if student:
-            documents = dl.document.get_m([("student_id", "=", student.id), (f"co_account_{co_account_nbr}", "=", student.co_account(co_account_nbr)), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
+            documents = dl.document.get_m([("student_id", "=", student.id), (f"co_account_{current_user.coaccount_nbr}", "=", student.co_account(current_user.coaccount_nbr)), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
             documents = [d.to_dict() for d in documents]
             return json.dumps({"current_user": current_user.to_dict(), "student": student.to_dict(), "documents": documents,})
         return({"status": "warning", "msg": "Sorry, geen toegang!"})
@@ -47,11 +45,17 @@ def meta():
     schools = [s[0] for s in schools if s[0] != None]
     return json.dumps({"schools": schools})
 
-@bp_document.route('/document', methods=['POST', "GET"])
+@bp_document.route('/document', methods=['POST', "GET", "UPDATE"])
 @login_required
 def document():
     if request.method == "POST":
         ret = al.document.add(request)
+    elif request.method == "UPDATE":
+        params = json.loads(request.data)
+        document = dl.models.get(dl.document.Document, ("id", "=", params["id"]))
+        del (params["id"])
+        dl.models.update(dl.document.Document, document, params)
+        ret = []
     else: # GET
         ret = al.document.get(request)
     return json.dumps(ret)

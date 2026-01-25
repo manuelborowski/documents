@@ -46,7 +46,7 @@ const __column_clicked_cb = async (column, row) => {
             const linkSource = `data:application/pdf;base64,${data.file}`;
             const downloadLink = document.createElement("a");
             downloadLink.href = linkSource;
-            downloadLink.download = `${data.naam} ${data.voornaam} ${data.klasgroep} ${data.timestamp}`;
+            downloadLink.download = `${data.naam_voornaam} ${data.klasgroep} ${data.timestamp}`;
             downloadLink.click();
         }
     }

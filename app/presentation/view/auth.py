@@ -12,6 +12,12 @@ log.addFilter(MyLogFilter())
 
 bp_auth = Blueprint('auth', __name__, )
 
+def login_user_type(user, type="user"):
+    login_user(user, remember=False)
+    session.permanent = True
+    session["type"] = type
+
+
 @bp_auth.route('/', methods=["GET", 'POST'])
 def login():
     try:
@@ -38,7 +44,7 @@ def login():
                 if secret_pin == login_pin:
                     users = dl.models.get_m(dl.user.User, ("first_name", "=", "pinlogin"), order_by="last_login")
                     user = users[0]
-                    login_user(user)
+                    login_user_type(user, "user")
                     log.info(f'user {user.username} logged in')
                     user = dl.user.update(user, {"last_login": datetime.datetime.now()})
                     session["token-login"] = False
@@ -53,7 +59,7 @@ def login():
             else:
                 user = dl.models.get(dl.user.User,('username', "c=", request.form["username"])) # c= : case sensitive comparison
                 if user is not None and user.verify_password(request.form["password"]):
-                    login_user(user)
+                    login_user_type(user, "user")
                     log.info(f'user {user.username} logged in')
                     user = dl.user.update(user, {"last_login": datetime.datetime.now()})
                     session["token-login"] = False
@@ -118,7 +124,7 @@ def login_ss():
                     else:
                         log.info('New users not allowed via smartschool')
                         return redirect(url_for('auth.login'))
-                login_user(user)
+                login_user_type(user, "user")
                 log.info(f'OAUTH user {user.username} logged in')
                 if not user:
                     log.error('Could not save user')
@@ -131,22 +137,16 @@ def login_ss():
                 return redirect(url_for(app.config["MENU_DEFAULT"]))
             elif profile['basisrol'] == "Leerling" and profile["isMainAccount"] == 0:
                 # co-accounts of students are allowed to login
-                profile['username'] = str(profile["nrCoAccount"]) + profile['username'] # username is the same for coaccount 1 and 2
-                user = dl.models.get(dl.user.User, [('username', "c=" ,profile['username']), ('user_type', "=", dl.user.User.USER_TYPE.OAUTH)])
-                profile['last_login'] = datetime.datetime.now()
-                if user:
-                    profile['first_name'] = profile['name'] # student name and surname
-                    profile['last_name'] = profile['surname']
-                    user.email = profile['email'] # parent email
-                    user = dl.user.update(user, profile)
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('co_account', "=", profile["nrCoAccount"])])
+                profile["coaccount_nbr"] = profile["nrCoAccount"]
+                if coaccount:
+                    profile['naam_voornaam'] = profile['surname'] + " " + profile['name'] # student name and surname
+                    coaccount = dl.models.update(dl.coaccount.Coaccount, coaccount, profile, timestamp=True)
                 else:
-                    profile['first_name'] = profile['name']
-                    profile['last_name'] = profile['surname']
-                    profile['user_type'] = dl.user.User.USER_TYPE.OAUTH
-                    profile['level'] = 0 # guest access
-                    user = dl.user.add(profile)
-                login_user(user)
-                log.info(f'SS co-account user {user.username} logged in')
+                    profile['naam_voornaam'] = profile['surname'] + " " + profile['name'] # student name and surname
+                    coaccount = dl.models.add(dl.coaccount.Coaccount, profile, timestamp=True)
+                login_user_type(coaccount, "coaccount")
+                log.info(f'SS co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
                 # Ok, continue
                 return redirect(url_for('document.show'))
             else:

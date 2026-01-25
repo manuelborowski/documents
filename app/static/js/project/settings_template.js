@@ -2,6 +2,7 @@ export const settings_template = [
     {
         type: "container", label: "Templates", save: true, default_collapsed: true, rows: [
             {label: "Gebruikers", name: "user-datatables-template", type: "textarea"},
+            {label: "Co-accounts", name: "coaccount-datatables-template", type: "textarea"},
             {label: "Documenten", name: "document-datatables-template", type: "textarea"},
             {label: "Studenten", name: "student-datatables-template", type: "textarea"},
         ]

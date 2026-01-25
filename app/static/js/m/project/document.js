@@ -67,7 +67,7 @@ $(document).ready(async function () {
                 const linkSource = `data:application/pdf;base64,${data.file}`;
                 const downloadLink = document.createElement("a");
                 downloadLink.href = linkSource;
-                downloadLink.download = `${data.naam} ${data.voornaam} ${data.klasgroep} ${data.timestamp}`;
+                downloadLink.download = `${data.naam_voornaam} ${data.klasgroep} ${data.timestamp}`;
                 downloadLink.click();
             }
         }
