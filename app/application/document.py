@@ -1,11 +1,11 @@
 import datetime, shutil
 
 from app import data as dl, application as al
-import sys, requests
+import sys, inspect
 
 # logging on file level
 import logging
-from app import MyLogFilter, top_log_handle, app
+from app import MyLogFilter, top_log_handle
 
 log = logging.getLogger(f"{top_log_handle}.{__name__}")
 log.addFilter(MyLogFilter())
@@ -17,15 +17,14 @@ def add(request):
     try:
         document_type = request.form.get("document_type")
         username = request.form.get("username")
-        co_account = username[0]
-        username = username[1:]
+        coaccount_nbr = request.form.get("coaccount_nbr")
 
         now = str(datetime.datetime.now())[0:19]
         student = dl.student.get(("username", "=", username))
         if student:
             document = dl.document.add({
                 "document_type": document_type,
-                "co_account": student.co_account_1 if co_account == "1" else student.co_account_2,
+                "co_account": student.co_account_1 if coaccount_nbr == "1" else student.co_account_2,
                 "timestamp": now,
                 "naam_voornaam": student.naam + " " + student.voornaam,
                 "username": student.username,
@@ -42,10 +41,9 @@ def add(request):
                     file = files[0]  # file is a werkzeug.FileStorage object
                     file_parts = file.filename.split(".")
                     if len(file_parts) < 2:
-                        log.error(f'{sys._getframe().f_code.co_name}: document without extension')
+                        log.error(f'{inspect.currentframe().f_code.co_name}: document without extension')
                         return {"status": "error", "msg": "Bijlage moet een extensie hebben"}
                     file_extension = file_parts[-1]
-                    file_base = file_parts[0]
 
                     if file.mimetype.startswith("image/"):
                         mimetype = "application/pdf"
@@ -86,7 +84,7 @@ def add(request):
                     else:  # not an image, save as is
                         file.seek(0)  # make sure to read from the start
                         file.save(f"documents/{document.id}.{file_extension}")
-                    log.info(f'{sys._getframe().f_code.co_name}: saved document "{filename}", (type) {file.content_type}, (student) {username}')
+                    log.info(f'{inspect.currentframe().f_code.co_name}: saved document "{filename}", (type) {file.content_type}, (student) {username}')
                     return {"status": "ok", "msg": "Doktersbriefje opgeslagen", "document": document.to_dict()}
                 elif document_type == "ouderattest":
                     from_day = request.form.get("from_day")
@@ -128,12 +126,12 @@ def add(request):
                             subprocess.run([weasy_bin, str(html_path), f"documents/{filename}.pdf"], check=True)
                         else:
                             subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{filename}.pdf"], check=True)
-                    log.info(f'{sys._getframe().f_code.co_name}: saved ouderattest (student) {username}')
+                    log.info(f'{inspect.currentframe().f_code.co_name}: saved ouderattest (student) {username}')
                     return {"status": "ok", "msg": "Ouderattest opgeslagen", "document": document.to_dict()}
-            log.error(f'{sys._getframe().f_code.co_name}: Could not save document')
+            log.error(f'{inspect.currentframe().f_code.co_name}: Could not save document')
             return {"status": "error", "msg": "Fout, document niet opgeslagen"}
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}
 
 
@@ -146,5 +144,18 @@ def get(request):
                 document["file"] = base64.b64encode(file.read()).decode('utf-8')
         return documents
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {documents}, {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {documents}, {e}')
         return {"status": "error", "msg": {str(e)}}
+
+# Don't delete but set active to False
+def delete(ids):
+    try:
+        documents = dl.models.get_m(dl.document.Document, ("id", "in", ids))
+        for document in documents:
+            document.active = False
+        dl.models.commit()
+        return {"status": "ok", "msg": "Documenten zijn verwijderd"}
+    except Exception as e:
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
+        return {"status": "error", "msg": str(e)}
+

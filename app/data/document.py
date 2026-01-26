@@ -26,6 +26,7 @@ class Document(db.Model, SerializerMixin):
     from_day = db.Column(db.Date())
     nbr_days = db.Column(db.Integer(), default=1)
     schooljaar = db.Column(db.Integer(), default=2000)
+    active = db.Column(db.Boolean, default=True)
 
 def commit():
     return app.data.models.commit()
@@ -78,6 +79,7 @@ def pre_sql_filter(query, filters):
         if f['id'] == 'school-select':
             if f['value'] != 'all':
                 query = query.filter(Document.school == f['value'])
+    query = query.filter(Document.active == True)
     return query
 
 def pre_sql_search(search_string):

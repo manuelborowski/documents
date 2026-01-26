@@ -129,7 +129,7 @@ def get(model, filters=None, order_by=None):
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
     return None
 
-# filters is list of tupples: [(key, operator, value), ...]
+# filters is list of tuples: [(key, operator, value), ...]
 def get_m(model, filters=None, fields=None, order_by=None, first=False, count=False, active=True, start=None, stop=None, distinct=False):
     if fields is None:
         fields = []

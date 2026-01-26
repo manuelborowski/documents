@@ -16,9 +16,9 @@ bp_account = Blueprint('coaccount', __name__)
 @login_required
 @level_5_required
 def show():
-    return render_template("coaccount.html", table_config=config.create_table_config())
+    return render_template("project/coaccount.html", table_config=config.create_table_config())
 
-@bp_account.route('/coaacount/dt', methods=['POST'])
+@bp_account.route('/coaccount/dt', methods=['POST'])
 @login_required
 @level_5_required
 def dt():

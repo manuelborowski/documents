@@ -1,4 +1,4 @@
-import sys, json
+import sys, inspect
 import app.data.models
 from app import log, db
 from sqlalchemy_serializer import SerializerMixin
@@ -113,7 +113,7 @@ def get_klasgroepen():
         klasgroepen = [k[0] for k in query]
         return klasgroepen
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         raise e
 
 ############ obj overview list #########

@@ -1,5 +1,5 @@
-from app import data as dl, application as al
-import sys, requests
+from app import data as dl
+import inspect, requests
 
 # logging on file level
 import logging
@@ -12,13 +12,13 @@ def update(data):
     try:
         return {"status": "error", "msg": f"Onbekende operatie: {data}"}
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {data}, {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {data}, {e}')
         return {"status": "error", "msg": str(e)}
 
 
 ######################### CRON HANDLERS ##################################
 def student_cron_load_from_sdh(opaque=None, **kwargs):
-    log.info(f"{sys._getframe().f_code.co_name}, START")
+    log.info(f"{inspect.currentframe().f_code.co_name}, START")
     try:
         updated_students = []
         nbr_updated = 0
@@ -30,7 +30,7 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
         if res.status_code == 200:
             sdh_klassen = res.json()
             if sdh_klassen['status']:
-                log.info(f'{sys._getframe().f_code.co_name}, retrieved {len(sdh_klassen["data"])} klassen from SDH')
+                log.info(f'{inspect.currentframe().f_code.co_name}, retrieved {len(sdh_klassen["data"])} klassen from SDH')
                 klas2klasgroep = {k["klascode"]: k["klasgroepcode"] for k in sdh_klassen["data"]}
 
         # check for new, updated or deleted students
@@ -39,7 +39,7 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
         if res.status_code == 200:
             sdh_students = res.json()
             if sdh_students['status']:
-                log.info(f'{sys._getframe().f_code.co_name}, retrieved {len(sdh_students["data"])} students from SDH')
+                log.info(f'{inspect.currentframe().f_code.co_name}, retrieved {len(sdh_students["data"])} students from SDH')
                 db_students = dl.student.get_m(("klasgroep", "!", "Leerkracht"))
                 db_informatnummer_to_student = {s.informatnummer: s for s in db_students}
                 for sdh_student in sdh_students["data"]:
@@ -60,7 +60,7 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                         if update:
                             update.update({"item": db_student})
                             updated_students.append(update)
-                            log.info(f'{sys._getframe().f_code.co_name}, Update student {db_student.informatnummer}, update {update}')
+                            log.info(f'{inspect.currentframe().f_code.co_name}, Update student {db_student.informatnummer}, update {update}')
                             nbr_updated += 1
                         del (db_informatnummer_to_student[sdh_student["leerlingnummer"]])
                     else:
@@ -70,18 +70,18 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                                        "co_account_1": f"{sdh_student["lpv1_naam"]} {sdh_student["lpv1_voornaam"]}", "co_account_2": f"{sdh_student["lpv2_naam"]} {sdh_student["lpv2_voornaam"]}"
                                        }
                         new_students.append(new_student)
-                        log.info(f'{sys._getframe().f_code.co_name}, New student {sdh_student["leerlingnummer"]}')
+                        log.info(f'{inspect.currentframe().f_code.co_name}, New student {sdh_student["leerlingnummer"]}')
                 deleted_students = [v for (k, v) in db_informatnummer_to_student.items()]
                 for student in deleted_students:
-                    log.info(f'{sys._getframe().f_code.co_name}, Delete student {student.informatnummer}')
+                    log.info(f'{inspect.currentframe().f_code.co_name}, Delete student {student.informatnummer}')
                 dl.student.add_m(new_students)
                 dl.student.update_m(updated_students)
                 dl.student.delete_m(objs=deleted_students)
-                log.info(f'{sys._getframe().f_code.co_name}, Students add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
+                log.info(f'{inspect.currentframe().f_code.co_name}, Students add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
             else:
-                log.info(f'{sys._getframe().f_code.co_name}, error retrieving students from SDH, {sdh_students["data"]}')
+                log.info(f'{inspect.currentframe().f_code.co_name}, error retrieving students from SDH, {sdh_students["data"]}')
         else:
-            log.error(f'{sys._getframe().f_code.co_name}: api call to {sdh_student_url} returned {res.status_code}')
+            log.error(f'{inspect.currentframe().f_code.co_name}: api call to {sdh_student_url} returned {res.status_code}')
 
         updated_students = []
         nbr_updated = 0
@@ -92,7 +92,7 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
         if res.status_code == 200:
             sdh_staffs = res.json()
             if sdh_staffs['status']:
-                log.info(f'{sys._getframe().f_code.co_name}, retrieved {len(sdh_staffs["data"])} staffs from SDH')
+                log.info(f'{inspect.currentframe().f_code.co_name}, retrieved {len(sdh_staffs["data"])} staffs from SDH')
                 db_students = dl.student.get_m(("klasgroep", "=", "Leerkracht"))
                 db_informatnummer_to_staff = {s.informatnummer: s for s in db_students}
                 for sdh_staff in sdh_staffs["data"]:
@@ -106,29 +106,29 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                         if update:
                             update.update({"item": db_staff})
                             updated_students.append(update)
-                            log.info(f'{sys._getframe().f_code.co_name}, Update staff {db_staff.informatnummer}, update {update}')
+                            log.info(f'{inspect.currentframe().f_code.co_name}, Update staff {db_staff.informatnummer}, update {update}')
                             nbr_updated += 1
                         del (db_informatnummer_to_staff[sdh_staff["informat_id"]])
                     else:
                         new_staff = {"informatnummer": sdh_staff["informat_id"], "klasgroep": "Leerkracht", "roepnaam": sdh_staff["voornaam"],
                                      "naam": sdh_staff["naam"], "voornaam": sdh_staff["voornaam"], "rfid": sdh_staff["rfid"], "geslacht": sdh_staff["geslacht"]}
                         new_students.append(new_staff)
-                        log.info(f'{sys._getframe().f_code.co_name}, New staff {sdh_staff["informat_id"]}')
+                        log.info(f'{inspect.currentframe().f_code.co_name}, New staff {sdh_staff["informat_id"]}')
                 deleted_students = [v for (k, v) in db_informatnummer_to_staff.items()]
                 for student in deleted_students:
-                    log.info(f'{sys._getframe().f_code.co_name}, Delete staff {student.informatnummer}')
+                    log.info(f'{inspect.currentframe().f_code.co_name}, Delete staff {student.informatnummer}')
                 dl.student.add_m(new_students)
                 dl.student.update_m(updated_students)
                 dl.student.delete_m(objs=deleted_students)
-                log.info(f'{sys._getframe().f_code.co_name}, Staff add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
+                log.info(f'{inspect.currentframe().f_code.co_name}, Staff add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
             else:
-                log.info(f'{sys._getframe().f_code.co_name}, error retrieving staff from SDH, {sdh_staffs["data"]}')
+                log.info(f'{inspect.currentframe().f_code.co_name}, error retrieving staff from SDH, {sdh_staffs["data"]}')
         else:
-            log.error(f'{sys._getframe().f_code.co_name}: api call to {sdh_staff_url} returned {res.status_code}')
+            log.error(f'{inspect.currentframe().f_code.co_name}: api call to {sdh_staff_url} returned {res.status_code}')
 
-        log.info(f"{sys._getframe().f_code.co_name}, STOP")
+        log.info(f"{inspect.currentframe().f_code.co_name}, STOP")
     except Exception as e:
-        log.error(f'{sys._getframe().f_code.co_name}: {e}')
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
 
 ######################### DATATABLE HELPERS ##############################
 def format_data(db_list, total_count=None, filtered_count=None):

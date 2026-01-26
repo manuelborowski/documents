@@ -45,7 +45,7 @@ def meta():
     schools = [s[0] for s in schools if s[0] != None]
     return json.dumps({"schools": schools})
 
-@bp_document.route('/document', methods=['POST', "GET", "UPDATE"])
+@bp_document.route('/document', methods=['POST', "GET", "UPDATE", "DELETE"])
 @login_required
 def document():
     if request.method == "POST":
@@ -56,6 +56,8 @@ def document():
         del (params["id"])
         dl.models.update(dl.document.Document, document, params)
         ret = []
+    elif request.method == "DELETE":
+        ret = al.document.delete(request.args["ids"].split(","))
     else: # GET
         ret = al.document.get(request)
     return json.dumps(ret)
