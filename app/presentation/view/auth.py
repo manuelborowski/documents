@@ -173,3 +173,26 @@ def auto_login_generic():
             return redirect(url_for(app.config["MENU_DEFAULT"]))
     return render_template('login.html', message={"status": "error", "data": "Fout bij autologin"}, qr_img=None, qr_caption="")
 
+@bp_auth.route('/test', methods=['POST', 'GET'])
+def login_test():
+    try:
+        if "TEST_LOGIN" in app.config:
+            key = request.args.get("key")
+            profile = None
+            for login in app.config["TEST_LOGIN"]:
+                if login["key"] == key:
+                    profile = login
+                    break
+            if profile:
+                # co-accounts of students are allowed to login
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('co_account', "=", profile["nrCoAccount"])])
+                if coaccount:
+                    login_user_type(coaccount, "coaccount")
+                    log.info(f'TEST co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
+                    # Ok, continue
+                    return redirect(url_for('document.show'))
+    except Exception as e:
+        log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
+        return("<h1>Fout</h1>")
+
+

@@ -26,7 +26,7 @@ body > nav > div {
     color: white;
     padding: 4px;
     text-align: center;
-    width: 97%;
+    /*width: 97%;*/
     z-index: 1000; /* Keep it above other content */
     flex-flow: row nowrap;
     justify-content: flex-start;
@@ -44,7 +44,7 @@ footer {
     height: 30px;
     background-color: #333;
     color: white;
-    padding: 5px;
+    /*padding: 5px;*/
     text-align: center;
     bottom: 0;
     left: 0;

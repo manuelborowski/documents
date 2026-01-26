@@ -10,7 +10,7 @@ $(document).ready(async function () {
     const student_div = document.getElementById("student-div");
     const new_document_btn = document.getElementById("new-document-btn");
     const meta = await fetch_get("document.meta");
-    student_div.innerHTML = `Leerling: ${meta.current_user.first_name} ${meta.current_user.last_name}`
+    student_div.innerHTML = `Leerling: ${meta.current_user.naam_voornaam}`
     const ctx = {ouderattest: {days: 0}};
 
     const __handle_add_response = resp => {
