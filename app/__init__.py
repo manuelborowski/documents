@@ -19,8 +19,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.1: updated architecture to template-0.25
 # 0.6-template-0.25-0.2: users and coaccounts are different tables.
 # 0.6-template-0.25-0.3: added test-coaccount-url
+# 0.6-template-0.25-0.4: requirements.txt
 
-version = "0.6-template-0.25-0.3"
+version = "0.6-template-0.25-0.4"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
