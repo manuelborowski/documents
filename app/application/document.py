@@ -169,7 +169,7 @@ def delete(ids):
 def export(ids):
     documents = dl.models.get_m(dl.document.Document, ("id", "in", ids))
     document_path = os.path.join(f"{app.root_path}", "..", "documents")
-    files = [open(os.path.join(document_path, d.name), "rb") for d in documents]
+    files = [open(os.path.join(document_path, d.name), "rb") for d in documents if os.path.exists(os.path.join(document_path, d.name))]
     merger = PdfWriter()
     try:
         if len(documents) == 1:

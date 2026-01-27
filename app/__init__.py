@@ -23,8 +23,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.5: update documents.js, added active-flag to documents
 # 0.6-template-0.25-0.6: reduced size of photo to 100kB.  Export documents
 # 0.6-template-0.25-0.7: on students page, add medischattest
+# 0.6-template-0.25-0.8: small bugfix.  Improved contextmenu handling
 
-version = "0.6-template-0.25-0.7"
+version = "0.6-template-0.25-0.8"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

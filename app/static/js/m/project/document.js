@@ -236,6 +236,7 @@ $(document).ready(async function () {
             data.append("from_day", from_day_value);
             data.append("nbr_days", new_nbr_of_days);
             data.append("document_type", "ouderattest");
+            data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
             data.append("username", meta.current_user.username)
             const resp = await fetch_post("document.document", data, true);
             patience.close();

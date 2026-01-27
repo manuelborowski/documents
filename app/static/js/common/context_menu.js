@@ -35,9 +35,10 @@ export class ContextMenu {
         }
 
         // right-mouse-click in the active-area will open the context menu
-        active_area.addEventListener("contextmenu", e => {
+        document.addEventListener("contextmenu", e => {
             e.preventDefault();
             e.stopImmediatePropagation();
+            if (!active_area.contains(e.target)) return;
             let x = e.x, y = e.y;
             const win_width = window.innerWidth;
             const win_height = window.innerHeight;
@@ -63,7 +64,7 @@ export class ContextMenu {
             this.context_placeholder.style.top = `${y}px`;
             document.querySelector("body").appendChild(this.context_placeholder);
             document.addEventListener("click", () => this.context_placeholder.remove());
-        });
+        }, { capture: true });
 
     }
 
