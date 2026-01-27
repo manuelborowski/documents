@@ -80,10 +80,10 @@ $(document).ready(async function () {
             html: `
                 <select id="document-type-select">
                     <option value="none">Maak uw keuze</option>
-                    <option value="doktersbriefje">Medisch attest</option>
+                    <option value="medischattest">Medisch attest</option>
                     <option value="ouderattest">Ouderattest</option>
                 </select>
-                <div id="doktersbriefje-info" hidden>
+                <div id="medischattest-info" hidden>
                     <img src="static/img/take-picture-of-document.png" width=150px><br>
                     Leg het document plat en gebruik eventueel plakband of een gewicht.<br>
                     Zorg voor een goede belichting.<br>
@@ -117,10 +117,10 @@ $(document).ready(async function () {
             },
             didRender: () => {
                 document.getElementById("document-type-select").addEventListener("change", e => {
-                    document.getElementById("doktersbriefje-info").hidden = true;
+                    document.getElementById("medischattest-info").hidden = true;
                     document.getElementById("ouderattest-info").hidden = true;
-                    if (e.target.value === "doktersbriefje") {
-                        document.getElementById("doktersbriefje-info").hidden = false;
+                    if (e.target.value === "medischattest") {
+                        document.getElementById("medischattest-info").hidden = false;
                     } else {
                         document.getElementById("ouderattest-info").hidden = false;
                     }
@@ -130,7 +130,7 @@ $(document).ready(async function () {
         });
         if (result.isConfirmed) {
             const document_type_select = document.getElementById("document-type-select");
-            if (document_type_select.value === "doktersbriefje") {
+            if (document_type_select.value === "medischattest") {
                 document.getElementById("document-field").click();
                 // upload attachments, called when the file select dialog closes.
                 document.getElementById("document-field").addEventListener("change", async e => {

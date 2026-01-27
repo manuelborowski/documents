@@ -82,50 +82,6 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                 log.info(f'{inspect.currentframe().f_code.co_name}, error retrieving students from SDH, {sdh_students["data"]}')
         else:
             log.error(f'{inspect.currentframe().f_code.co_name}: api call to {sdh_student_url} returned {res.status_code}')
-
-        updated_students = []
-        nbr_updated = 0
-        new_students = []
-        # check for new, updated or deleted staff
-        sdh_staff_url = app.config["SDH_GET_STAFF_URL"]
-        res = requests.get(sdh_staff_url, headers={'x-api-key': sdh_key})
-        if res.status_code == 200:
-            sdh_staffs = res.json()
-            if sdh_staffs['status']:
-                log.info(f'{inspect.currentframe().f_code.co_name}, retrieved {len(sdh_staffs["data"])} staffs from SDH')
-                db_students = dl.student.get_m(("klasgroep", "=", "Leerkracht"))
-                db_informatnummer_to_staff = {s.informatnummer: s for s in db_students}
-                for sdh_staff in sdh_staffs["data"]:
-                    if sdh_staff["informat_id"] in ["", None]: continue
-                    if sdh_staff["informat_id"] in db_informatnummer_to_staff:
-                        # check for changed rfid
-                        db_staff = db_informatnummer_to_staff[sdh_staff["informat_id"]]
-                        update = {}
-                        if db_staff.rfid != sdh_staff["rfid"]:
-                            update["rfid"] = sdh_staff["rfid"]
-                        if update:
-                            update.update({"item": db_staff})
-                            updated_students.append(update)
-                            log.info(f'{inspect.currentframe().f_code.co_name}, Update staff {db_staff.informatnummer}, update {update}')
-                            nbr_updated += 1
-                        del (db_informatnummer_to_staff[sdh_staff["informat_id"]])
-                    else:
-                        new_staff = {"informatnummer": sdh_staff["informat_id"], "klasgroep": "Leerkracht", "roepnaam": sdh_staff["voornaam"],
-                                     "naam": sdh_staff["naam"], "voornaam": sdh_staff["voornaam"], "rfid": sdh_staff["rfid"], "geslacht": sdh_staff["geslacht"]}
-                        new_students.append(new_staff)
-                        log.info(f'{inspect.currentframe().f_code.co_name}, New staff {sdh_staff["informat_id"]}')
-                deleted_students = [v for (k, v) in db_informatnummer_to_staff.items()]
-                for student in deleted_students:
-                    log.info(f'{inspect.currentframe().f_code.co_name}, Delete staff {student.informatnummer}')
-                dl.student.add_m(new_students)
-                dl.student.update_m(updated_students)
-                dl.student.delete_m(objs=deleted_students)
-                log.info(f'{inspect.currentframe().f_code.co_name}, Staff add {len(new_students)}, update {nbr_updated}, delete {len(deleted_students)}')
-            else:
-                log.info(f'{inspect.currentframe().f_code.co_name}, error retrieving staff from SDH, {sdh_staffs["data"]}')
-        else:
-            log.error(f'{inspect.currentframe().f_code.co_name}: api call to {sdh_staff_url} returned {res.status_code}')
-
         log.info(f"{inspect.currentframe().f_code.co_name}, STOP")
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')

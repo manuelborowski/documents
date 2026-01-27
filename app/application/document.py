@@ -3,6 +3,7 @@ from pypdf import PdfWriter
 from app import data as dl, application as al, app
 import sys, inspect, os, io
 from flask import send_from_directory, send_file
+from flask_login import current_user
 
 # logging on file level
 import logging
@@ -23,9 +24,10 @@ def add(request):
         now = str(datetime.datetime.now())[0:19]
         student = dl.student.get(("username", "=", username))
         if student:
+            coaccount = student.co_account_1 if coaccount_nbr == "1" else student.co_account_2 if coaccount_nbr == "2" else current_user.username
             document = dl.document.add({
                 "document_type": document_type,
-                "co_account": student.co_account_1 if coaccount_nbr == "1" else student.co_account_2,
+                "co_account": coaccount,
                 "timestamp": now,
                 "naam_voornaam": student.naam + " " + student.voornaam,
                 "username": student.username,
@@ -37,7 +39,7 @@ def add(request):
 
             if document:
                 filename = f"{student.naam} {student.voornaam} {student.klasgroep} {now}".replace(" ", "-").replace(":", "-")
-                if document_type == "doktersbriefje":
+                if document_type == "medischattest":
                     files = request.files.getlist("attachment_file")
                     file = files[0]  # file is a werkzeug.FileStorage object
                     if app.config["LOG_LEVEL"] == "DEBUG":
