@@ -21,8 +21,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.3: added test-coaccount-url
 # 0.6-template-0.25-0.4: requirements.txt
 # 0.6-template-0.25-0.5: update documents.js, added active-flag to documents
+# 0.6-template-0.25-0.6: reduced size of photo to 100kB.  Export documents
 
-version = "0.6-template-0.25-0.5"
+version = "0.6-template-0.25-0.6"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -38,9 +39,20 @@ class MyLogFilter(logging.Filter):
         return True
 
 
+from app.config import app_config
+
+config_name = os.getenv('FLASK_CONFIG')
+config_name = config_name if config_name else 'production'
+app.config.from_object(app_config[config_name])
+app.config.from_pyfile('config.py')
+app.config["RUN_MODE"] = config_name
+
 log.addFilter(MyLogFilter())
 LOG_FILENAME = os.path.join(sys.path[0], f'log/documents.txt')
-log_level = getattr(logging, 'INFO')
+try:
+    log_level = getattr(logging, app_config[config_name].LOG_LEVEL)
+except:
+    log_level = getattr(logging, 'INFO')
 log.setLevel(log_level)
 log_handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1024 * 1024, backupCount=20, encoding="utf-8")
 log_formatter = logging.Formatter(u'%(asctime)s - %(levelname)s - %(username)s - %(message)s')
@@ -49,13 +61,6 @@ log.addHandler(log_handler)
 
 log.info("START documents")
 
-from app.config import app_config
-
-config_name = os.getenv('FLASK_CONFIG')
-config_name = config_name if config_name else 'production'
-app.config.from_object(app_config[config_name])
-app.config.from_pyfile('config.py')
-app.config["RUN_MODE"] = config_name
 
 jsglue = JSGlue(app)
 db = SQLAlchemy()

@@ -1,5 +1,5 @@
 export class ResizeImage {
-    constructor({maxBytes = 1_000_000} = {}) {this.maxBytes = maxBytes;}
+    constructor({max_bytes: max_bytes = 1_000_000} = {}) {this.max_bytes = max_bytes;}
 
     async process(file) {
         if (!file || !file.type.startsWith("image/")) throw new Error("Invalid image file");
@@ -20,12 +20,12 @@ export class ResizeImage {
 
         do {
             blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-            if (blob.size <= this.maxBytes) break;
+            if (blob.size <= this.max_bytes) break;
             quality -= 0.1;
         } while (quality >= 0.4);
 
         // 2️⃣ If still too large → scale down
-        while (blob.size > this.maxBytes) {
+        while (blob.size > this.max_bytes) {
             width = Math.round(width * 0.85);
             height = Math.round(height * 0.85);
             canvas.width = width;

@@ -139,7 +139,7 @@ $(document).ready(async function () {
                     data.append("document_type", document_type);
                     data.append("username", meta.current_user.username)
                     data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
-                    const resized_blob = await new ResizeImage().process(e.target.files[0]);
+                    const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
                     const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
                     data.append("attachment_file", resized_image);
                     const resp = await fetch_post("document.document", data, true);

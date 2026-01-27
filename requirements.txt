@@ -69,6 +69,7 @@ pycparser==2.22
 pydyf==0.12.1
 PyJWT==2.10.1
 PyMySQL==1.1.1
+pypdf==6.6.2
 pyphen==0.17.2
 python-dateutil==2.9.0.post0
 python-engineio==4.10.1

@@ -1,14 +1,15 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required, current_user
+
 from app.data.datatables import DatatableConfig
 from app.presentation.view import datatable_get_data
-import json, sys
+import json
 from user_agents import parse
 from app import application as al, data as dl
 
 #logging on file level
 import logging
-from app import MyLogFilter, top_log_handle, app
+from app import MyLogFilter, top_log_handle
 log = logging.getLogger(f"{top_log_handle}.{__name__}")
 log.addFilter(MyLogFilter())
 bp_document = Blueprint('document', __name__)
@@ -62,6 +63,11 @@ def document():
         ret = al.document.get(request)
     return json.dumps(ret)
 
+@bp_document.route('/document/export', methods=["GET"])
+@login_required
+def export():
+    return al.document.export(request.args["ids"].split(","))
+    return send_file(directory, file, as_attachment=True)
 
 class Config(DatatableConfig):
     def pre_sql_query(self):

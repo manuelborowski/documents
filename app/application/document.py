@@ -1,7 +1,8 @@
 import datetime, shutil
-
-from app import data as dl, application as al
-import sys, inspect
+from pypdf import PdfWriter
+from app import data as dl, application as al, app
+import sys, inspect, os, io
+from flask import send_from_directory, send_file
 
 # logging on file level
 import logging
@@ -39,6 +40,10 @@ def add(request):
                 if document_type == "doktersbriefje":
                     files = request.files.getlist("attachment_file")
                     file = files[0]  # file is a werkzeug.FileStorage object
+                    if app.config["LOG_LEVEL"] == "DEBUG":
+                        imagesize = file.stream.seek(0, 2)
+                        log.debug(f'{inspect.currentframe().f_code.co_name}: id: {student.informatnummer}, JPG-size: {imagesize}')
+                        file.stream.seek(0)
                     file_parts = file.filename.split(".")
                     if len(file_parts) < 2:
                         log.error(f'{inspect.currentframe().f_code.co_name}: document without extension')
@@ -158,4 +163,27 @@ def delete(ids):
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}
+
+def export(ids):
+    documents = dl.models.get_m(dl.document.Document, ("id", "in", ids))
+    document_path = os.path.join(f"{app.root_path}", "..", "documents")
+    files = [open(os.path.join(document_path, d.name), "rb") for d in documents]
+    merger = PdfWriter()
+    try:
+        if len(documents) == 1:
+            return send_from_directory(document_path, documents[0].name, as_attachment=True)
+        pdf_bytes_list = [f.read() for f in files]
+        for b in pdf_bytes_list:
+            merger.append(io.BytesIO(b))  # append accepts file-like objects
+        out = io.BytesIO()
+        merger.write(out)
+        out.seek(0)
+        now = str(datetime.datetime.now())[0:19].replace(":", "-")
+        return send_file(out, as_attachment=True, download_name=f"document-{now}.pdf", mimetype="application/pdf")
+    except Exception as e:
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
+        return {"Er ging iets fout, waarschuw ICT"}
+    finally:
+        merger.close()
+        [f.close() for f in files]
 
