@@ -185,12 +185,18 @@ def login_test():
                     break
             if profile:
                 # co-accounts of students are allowed to login
-                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('co_account', "=", profile["nrCoAccount"])])
-                if coaccount:
-                    login_user_type(coaccount, "coaccount")
-                    log.info(f'TEST co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
-                    # Ok, continue
-                    return redirect(url_for('document.show'))
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('coaccount_nbr', "=", profile["nrCoAccount"])])
+                if not coaccount:
+                    coaccount = dl.models.add(dl.coaccount.Coaccount, {
+                        "username": profile["username"],
+                        "coaccount_nbr": profile["nrCoAccount"],
+                        "naam_voornaam": profile["naam_voornaam"],
+                    })
+                login_user_type(coaccount, "coaccount")
+                dl.models.update(dl.coaccount.Coaccount, coaccount, {"timestamp": datetime.datetime.now()})
+                log.info(f'TEST co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
+                # Ok, continue
+                return redirect(url_for('document.show'))
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
         return("<h1>Fout</h1>")

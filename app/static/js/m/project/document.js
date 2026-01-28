@@ -112,6 +112,7 @@ $(document).ready(async function () {
                 document_type = document_type_select.value;
                 if (document_type === "none") {
                     document_type_select.style.borderColor = "red";
+                    document_type_select.style.borderWidth = "thick";
                     return false;
                 } else return true;
             },
@@ -191,13 +192,25 @@ $(document).ready(async function () {
                 // -Maximum 4 days per schoolyear
                 // -Maximum 3 consecutive days
                 // -Cannot span a weekend
-                if (document.getElementById("nbr-days-select").value === "one-day") {
+                const nbr_days_select = document.getElementById("nbr-days-select");
+                if (nbr_days_select.value === "none") {
+                    nbr_days_select.style.borderColor = "red";
+                    nbr_days_select.style.borderWidth = "thick";
+                    return false
+                }
+                if (nbr_days_select.value === "one-day") {
                     from_day_value = document.getElementById("absent-on-day").value;
                     new_nbr_of_days = 1;
                 } else {
                     from_day_value = document.getElementById("absent-from-day").value;
                     const from_day = new Date(from_day_value);
-                    const till_day_value = document.getElementById("absent-till-day").value;
+                    const till_day_date_select = document.getElementById("absent-till-day");
+                    const till_day_value = till_day_date_select.value;
+                    if (till_day_value === "") {
+                        till_day_date_select.style.borderColor = "red";
+                        till_day_date_select.style.borderWidth = "thick";
+                        return false
+                    }
                     const till_day = new Date(till_day_value);
                     if (till_day < from_day) {
                         Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
