@@ -9,9 +9,26 @@ $(document).ready(async function () {
     const document_list = document.getElementById("document-list");
     const student_div = document.getElementById("student-div");
     const new_document_btn = document.getElementById("new-document-btn");
+    const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.naam_voornaam}`
     const ctx = {ouderattest: {days: 0}};
+
+
+    document_field.addEventListener("change", async e => {
+        const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
+        const data = new FormData();
+        data.append("document_type", "medischattest");
+        data.append("username", meta.current_user.username)
+        data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
+        const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
+        const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
+        data.append("attachment_file", resized_image);
+        const resp = await fetch_post("document.document", data, true);
+        patience.close();
+        document_field.value = null;
+        __handle_add_response(resp);
+    });
 
     const __handle_add_response = resp => {
         if (resp.document) {
@@ -73,6 +90,7 @@ $(document).ready(async function () {
         }
     }
 
+
     const __new_document = async () => {
         let document_type = null;
         const result = await Swal.fire({
@@ -132,21 +150,8 @@ $(document).ready(async function () {
         if (result.isConfirmed) {
             const document_type_select = document.getElementById("document-type-select");
             if (document_type_select.value === "medischattest") {
-                document.getElementById("document-field").click();
-                // upload attachments, called when the file select dialog closes.
-                document.getElementById("document-field").addEventListener("change", async e => {
-                    const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
-                    const data = new FormData();
-                    data.append("document_type", document_type);
-                    data.append("username", meta.current_user.username)
-                    data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
-                    const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
-                    const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
-                    data.append("attachment_file", resized_image);
-                    const resp = await fetch_post("document.document", data, true);
-                    patience.close();
-                    __handle_add_response(resp);
-                });
+                // Save, resize and send to server
+                document_field.click();
             } else if (document_type_select.value === "ouderattest") {
                 __new_oudersattest();
             }

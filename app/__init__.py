@@ -25,8 +25,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.7: on students page, add medischattest
 # 0.6-template-0.25-0.8: small bugfix.  Improved contextmenu handling
 # 0.6-template-0.25-0.9: test, authenticate new logins.  Mobile, add input-checks
+# 0.6-template-0.25-0.10: fixed issue with uploading photo
 
-version = "0.6-template-0.25-0.9"
+version = "0.6-template-0.25-0.10"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
