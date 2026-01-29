@@ -26,8 +26,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.8: small bugfix.  Improved contextmenu handling
 # 0.6-template-0.25-0.9: test, authenticate new logins.  Mobile, add input-checks
 # 0.6-template-0.25-0.10: fixed issue with uploading photo
+# 0.6-template-0.25-0.11: when syncing with SDH, skip test/default students
 
-version = "0.6-template-0.25-0.10"
+version = "0.6-template-0.25-0.11"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

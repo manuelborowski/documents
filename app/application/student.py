@@ -71,6 +71,12 @@ def student_cron_load_from_sdh(opaque=None, **kwargs):
                                        }
                         new_students.append(new_student)
                         log.info(f'{inspect.currentframe().f_code.co_name}, New student {sdh_student["leerlingnummer"]}')
+                # Skip default/test students
+                skip_students = [s["informatnummer"] for s in app.config["DEFAULT_STUDENTS"]] if "DEFAULT_STUDENTS" in app.config else []
+                for informatnummer in skip_students:
+                    if informatnummer in db_informatnummer_to_student:
+                        log.info(f'{inspect.currentframe().f_code.co_name}, Delete student, SKIP because test/default {informatnummer}')
+                        del db_informatnummer_to_student[informatnummer]
                 deleted_students = [v for (k, v) in db_informatnummer_to_student.items()]
                 for student in deleted_students:
                     log.info(f'{inspect.currentframe().f_code.co_name}, Delete student {student.informatnummer}')
