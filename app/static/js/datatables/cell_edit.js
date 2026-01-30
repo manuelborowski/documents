@@ -12,7 +12,7 @@ export class CellEdit {
             if ("celledit" in template[i]) {
                 const celledit = template[i].celledit;
                 this.columns[i] = {type: celledit.type}
-                if (celledit.type === 'select') {
+                if (["select", "bool"].includes(celledit.type)) {
                     this.columns[i].options = [];
                     this.select_options[i] = {};
                     celledit.options.forEach(o => {
@@ -47,6 +47,7 @@ export class CellEdit {
         let $edit_element = null;
         switch (column_config.type) {
             case "select":
+            case "bool":
                 const $select = $(`<select class="${this.input_css}"></select>`);
                 $.each(column_config.options, function (index, option) {
                     const selected = old_value === option.value ? "selected" : "";
@@ -72,7 +73,7 @@ export class CellEdit {
                 $text[0].setSelectionRange($text.val().length, $text.val().length);
                 $edit_element = $text;
                 break;
-            case "date": // integer input w/ confirm
+            case "date":
                 const $date = $(`<input class="${this.input_css}" value="${old_value}" type="date">`);
                 $($target).html($date);
                 $edit_element = $date;
@@ -98,22 +99,22 @@ export class CellEdit {
         const column_index = this.table.column($td).index();
         const column_config = this.columns[column_index];
         let old_value = $dt_cell.data();
-        let new_value;
-        $dt_cell.data(event.currentTarget.value);
-        if (column_config.type === "select")
-            $($td).html(this.select_options[column_index][event.currentTarget.value]);
-        else if (column_index.type === "text-confirmkey")
-            $($td).html(event.currentTarget.value);
-        if (event.currentTarget.dataset.type === "int") {
-            new_value = parseInt(event.currentTarget.value);
+        let new_value = event.currentTarget.value;
+        if (column_config.type === "select") {
+            $dt_cell.data(this.select_options[column_index][new_value]);
+        } else if (column_config.type === "bool") {
+            $dt_cell.data(this.select_options[column_index][new_value]);
+            new_value = new_value === "true";
+        } else if (["text-confirmkey", "text"].includes(column_config.type)) {
+            $dt_cell.data(new_value);
+        } else if (["int", "int-confirmkey"].includes(column_config.type)) {
+            new_value = parseInt(new_value);
             old_value = parseInt(old_value);
             if (isNaN(new_value)) {
-                new AlertPopup("warning", "Je moet een getal ingeveven, aub");
+                new AlertPopup("warning", "Je moet een getal ingeven, aub");
                 new_value = old_value;
             }
             $dt_cell.data(new_value);
-        } else {
-            new_value = event.currentTarget.value;
         }
         this.update_cb($dt_row, column_index, new_value, old_value);
     }
@@ -125,9 +126,9 @@ export class CellEdit {
     }
 
     sanitize_value(value) {
-        if (typeof(value) === "number")  return isNaN(value) ? "" : value;
+        if (typeof (value) === "number") return isNaN(value) ? "" : value;
         if (typeof (value) === 'undefined' || value === null || value.length < 1) return "";
-        value = value.replace(/'/g, "&#39;");
+        if (typeof (value) === "string") value = value.replace(/'/g, "&#39;");
         return value;
     }
 }

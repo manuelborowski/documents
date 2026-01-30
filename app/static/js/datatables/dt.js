@@ -117,6 +117,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
             input.id = "select_all";
         } else {
             th.innerHTML = i.name;
+            if (i.tooltip) th.title = i.tooltip;
         }
     });
     document.querySelector(".container-fluid").innerHTML = "";
@@ -306,6 +307,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
         const column_name = ctx.table.column(column_index).dataSrc()
         // update_cell_changed({id: $dt_row.data().DT_RowId, column: column_name, value});
         await fetch_update(`${ctx.config.view}.${ctx.config.view}`, {id: $dt_row.data().DT_RowId, [column_name]: value});
+        if (callbacks.cell_edit) callbacks.cell_edit($dt_row.data().DT_RowId, column_name, value);
     }
 
     const cell_toggle_changed_cb = async (cell, row, value) => {

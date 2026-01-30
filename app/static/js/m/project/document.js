@@ -12,7 +12,7 @@ $(document).ready(async function () {
     const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.naam_voornaam}`
-    const ctx = {ouderattest: {days: 0}};
+    const ctx = {ouderattest: {days: 0, nbr: 0}};
 
 
     document_field.addEventListener("change", async e => {
@@ -37,7 +37,10 @@ $(document).ready(async function () {
             if (resp.document.document_type === "ouderattest") div.innerHTML += ` (${resp.document.nbr_days} dagen)`
             div.dataset.id = resp.document.id;
             document_list.insertBefore(div, document_list.firstChild);
-            if (resp.document.document_type === "ouderattest") ctx.ouderattest.days += resp.document.nbr_days;
+            if (resp.document.document_type === "ouderattest") {
+                ctx.ouderattest.days += resp.document.nbr_days;
+                ctx.ouderattest.nbr ++;
+            }
         }
     }
 
@@ -194,7 +197,7 @@ $(document).ready(async function () {
             cancelButtonAriaLabel: "Annuleer",
             preConfirm: () => {
                 // Check if the oudersattest is valid
-                // -Maximum 4 days per schoolyear
+                // -Maximum 4 ouderattesten per schoolyear
                 // -Maximum 3 consecutive days
                 // -Cannot span a weekend
                 const nbr_days_select = document.getElementById("nbr-days-select");
@@ -227,8 +230,8 @@ $(document).ready(async function () {
                         return false
                     }
                 }
-                if ((ctx.ouderattest.days + new_nbr_of_days) > OUDERATTEST_MAX_NBR) {
-                    Swal.fire(`Sorry, de leerling mag maximaal ${OUDERATTEST_MAX_NBR} dagen afwezig zijn!`);
+                if ((ctx.ouderattest.nbr) >= OUDERATTEST_MAX_NBR) {
+                    Swal.fire(`Sorry, u mag maximaal ${OUDERATTEST_MAX_NBR} ouderattesten insturen!`);
                     return false
                 }
                 return true
@@ -262,14 +265,17 @@ $(document).ready(async function () {
         }
     }
 
-    // Create list with already uploaded documents
+    // Create list with already uploaded documents (current schoolyear only)
     for (const doc of meta.documents) {
         const div = document.createElement("div");
         div.innerHTML = `${doc.timestamp} ${doc.document_type}`;
         if (doc.document_type === "ouderattest") div.innerHTML += `, ${doc.nbr_days} dag(en)`
         div.dataset.id = doc.id;
         document_list.appendChild(div);
-        if (doc.document_type === "ouderattest") ctx.ouderattest.days += doc.nbr_days;
+        if (doc.document_type === "ouderattest") {
+            ctx.ouderattest.days += doc.nbr_days;
+            ctx.ouderattest.nbr++;
+        }
     }
 
     // When clicked on a document in the list, show the content

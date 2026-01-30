@@ -35,9 +35,21 @@ const filter_menu_items = [
         options: [{value: "all", label: "Alle"}].concat(meta.schools.map(s => ({value: s, label: s.toUpperCase()}))),
         default: 'all',
         persistent: true
+    },
+    {
+        type: 'checkbox',
+        id: 'processed-check',
+        label: 'Afgehandeld?',
+        options: [{value: false, label: "Neen"}, {value: true, label: "Ja"}],
+        default: false,
+        persistent: true
     }
 ]
 
+const cell_edit = (id, column, value) => {
+    if (column === "processed") datatable_reload_table();
+}
+
 $(document).ready(async function () {
-    datatables_init({filter_menu_items, context_menu_items});
+    datatables_init({filter_menu_items, context_menu_items, callbacks: {cell_edit}});
 });

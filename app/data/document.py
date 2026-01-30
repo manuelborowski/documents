@@ -79,6 +79,9 @@ def pre_sql_filter(query, filters):
         if f['id'] == 'school-select':
             if f['value'] != 'all':
                 query = query.filter(Document.school == f['value'])
+        if f['id'] == 'processed-check':
+            if f['value'] == False:
+                query = query.filter(Document.processed == False)
     query = query.filter(Document.active == True)
     return query
 
