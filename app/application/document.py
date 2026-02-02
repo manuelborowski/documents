@@ -93,7 +93,7 @@ def add(request):
                         file.seek(0)  # make sure to read from the start
                         file.save(f"documents/{document.id}.{file_extension}")
                     log.info(f'{inspect.currentframe().f_code.co_name}: saved document "{filename}", (type) {file.content_type}, (student) {username}')
-                    return {"status": "ok", "msg": "Doktersbriefje opgeslagen", "document": document.to_dict()}
+                    return {"status": "ok", "msg": "Attest opgeslagen", "document": document.to_dict()}
                 else:
                     from_day = request.form.get("from_day")
                     nbr_days = int(request.form.get("nbr_days"))
@@ -135,7 +135,7 @@ def add(request):
                         else:
                             subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{filename}.pdf"], check=True)
                     log.info(f'{inspect.currentframe().f_code.co_name}: saved ouderattest (student) {username}')
-                    return {"status": "ok", "msg": "Ouderattest opgeslagen", "document": document.to_dict()}
+                    return {"status": "ok", "msg": "Attest opgeslagen", "document": document.to_dict()}
             log.error(f'{inspect.currentframe().f_code.co_name}: Could not save document')
             return {"status": "error", "msg": "Fout, document niet opgeslagen"}
     except Exception as e:
