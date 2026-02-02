@@ -30,8 +30,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.12: update datatables, filter-menu and cell-edit.  Ouderattest, bugfix to max nbr of attests, not days.  Added document-processed functionality
 # 0.6-template-0.25-0.13: scan ouderattest, copy/paste ouderattest
 # 0.6-template-0.25-0.14: syntax typo
+# 0.6-template-0.25-0.15: edge specific, display datepicker
 
-version = "0.6-template-0.25-0.14"
+version = "0.6-template-0.25-0.15"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

@@ -75,8 +75,8 @@ export class CellEdit {
                 break;
             case "date":
                 const $date = $(`<input class="${this.input_css}" value="${old_value}" type="date">`);
-                $($target).html($date);
-                $edit_element = $date;
+                $edit_element = $(`<span id="wrapper" style="height:40px; display:inline-block">`).append($date);
+                $($target).html($edit_element);
                 $date.on("change", this.update);
                 break;
             default:
