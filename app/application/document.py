@@ -18,6 +18,7 @@ from pathlib import Path
 def add(request):
     try:
         document_type = request.form.get("document_type")
+        document_scan = request.form.get("document_scan", False) == "true"
         username = request.form.get("username")
         coaccount_nbr = request.form.get("coaccount_nbr")
 
@@ -38,8 +39,8 @@ def add(request):
             })
 
             if document:
-                filename = f"{student.naam} {student.voornaam} {student.klasgroep} {now}".replace(" ", "-").replace(":", "-")
-                if document_type == "medischattest":
+                filename = f"{"M" if document_type == "medischattest" else "O"}{student.naam}{student.voornaam}{student.klasgroep}{now}".replace(" ", "").replace(":", "")
+                if document_scan:
                     files = request.files.getlist("attachment_file")
                     file = files[0]  # file is a werkzeug.FileStorage object
                     if app.config["LOG_LEVEL"] == "DEBUG":
@@ -93,7 +94,7 @@ def add(request):
                         file.save(f"documents/{document.id}.{file_extension}")
                     log.info(f'{inspect.currentframe().f_code.co_name}: saved document "{filename}", (type) {file.content_type}, (student) {username}')
                     return {"status": "ok", "msg": "Doktersbriefje opgeslagen", "document": document.to_dict()}
-                elif document_type == "ouderattest":
+                else:
                     from_day = request.form.get("from_day")
                     nbr_days = int(request.form.get("nbr_days"))
                     from_day_date = datetime.datetime.strptime(from_day, "%Y-%m-%d")

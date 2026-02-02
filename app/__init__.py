@@ -28,8 +28,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.10: fixed issue with uploading photo
 # 0.6-template-0.25-0.11: when syncing with SDH, skip test/default students
 # 0.6-template-0.25-0.12: update datatables, filter-menu and cell-edit.  Ouderattest, bugfix to max nbr of attests, not days.  Added document-processed functionality
+# 0.6-template-0.25-0.13: scan ouderattest, copy/paste ouderattest
 
-version = "0.6-template-0.25-0.12"
+version = "0.6-template-0.25-0.13"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
