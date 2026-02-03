@@ -8,12 +8,12 @@ const OUDERATTEST_CONSECUTIVE = 3;  // max 3 consecutive days absent
 $(document).ready(async function () {
     const document_list = document.getElementById("document-list");
     const student_div = document.getElementById("student-div");
-    const new_document_btn = document.getElementById("new-document-btn");
+    const new_medischattest_btn = document.getElementById("new-medischattest-btn");
+    const new_ouderattest_btn = document.getElementById("new-ouderattest-btn");
     const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.student}`
     const ctx = {ouderattest: {days: 0, nbr: 0}};
-
 
     const __handle_add_response = resp => {
         if (resp.document) {
@@ -109,7 +109,7 @@ $(document).ready(async function () {
             if (document_type_select.value === "medischattest") {
                 __new_medisch_attest()
             } else if (document_type_select.value === "ouderattest") {
-                __new_oudersattest();
+                __new_ouderattest();
             }
         }
     }
@@ -201,7 +201,7 @@ $(document).ready(async function () {
         }
     }
 
-    const __new_oudersattest = async () => {
+    const __new_ouderattest = async () => {
         const now = new Date()
         let new_nbr_of_days = 0;
         let from_day_value = null;
@@ -322,6 +322,8 @@ $(document).ready(async function () {
     // When clicked on a document in the list, show the content
     document_list.addEventListener("click", async event => __show_attest(event));
 
-    // New document button clicked
-    new_document_btn.addEventListener("click", async () => meta.current_user.coaccount_nbr === 0 ? __new_medisch_attest() : __new_attest());
+    if (meta.current_user.coaccount_nbr === 0) new_ouderattest_btn.style.display = "none";
+    // New ouder/medisch attest button clicked
+    new_medischattest_btn.addEventListener("click", async () => __new_medisch_attest());
+    new_ouderattest_btn.addEventListener("click", async () => __new_ouderattest());
 });

@@ -32,8 +32,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.14: syntax typo
 # 0.6-template-0.25-0.15: edge specific, display datepicker
 # 0.6-template-0.25-0.16: update coaccounts table, updated test login.  Student can upload medisch attest
+# 0.6-template-0.25-0.17: aesthetic update, display 2 buttons iso select
 
-version = "0.6-template-0.25-0.16"
+version = "0.6-template-0.25-0.17"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

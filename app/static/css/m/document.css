@@ -1,7 +1,6 @@
 
-
 *, ::after, ::before {
-     box-sizing: unset;
+    box-sizing: unset;
 }
 
 html {
@@ -63,9 +62,12 @@ button {
     cursor: pointer;
 }
 
-.green {
+.green-button {
     background-color: #aaff00;
     color: black;
+    border: yellow;
+    border-style: solid;
+    margin-top: 5px;
 }
 
 .red {
@@ -118,6 +120,6 @@ label:has(input[type="checkbox"]) {
 }
 
 .register-active {
-  background: white;
+    background: white;
 }
 
