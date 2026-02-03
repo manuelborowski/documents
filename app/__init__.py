@@ -31,8 +31,9 @@ from werkzeug.routing import IntegerConverter
 # 0.6-template-0.25-0.13: scan ouderattest, copy/paste ouderattest
 # 0.6-template-0.25-0.14: syntax typo
 # 0.6-template-0.25-0.15: edge specific, display datepicker
+# 0.6-template-0.25-0.16: update coaccounts table, updated test login.  Student can upload medisch attest
 
-version = "0.6-template-0.25-0.15"
+version = "0.6-template-0.25-0.16"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -40,13 +41,11 @@ app = Flask(__name__, instance_relative_config=True, template_folder='presentati
 top_log_handle = "DOCUMENTS"
 log = logging.getLogger(f"{top_log_handle}.{__name__}")
 
-
 # support custom filtering while logging
 class MyLogFilter(logging.Filter):
     def filter(self, record):
         record.username = current_user.username if current_user and current_user.is_active else 'NONE'
         return True
-
 
 from app.config import app_config
 

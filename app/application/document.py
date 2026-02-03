@@ -24,11 +24,12 @@ def add(request):
 
         now = str(datetime.datetime.now())[0:19]
         student = dl.student.get(("username", "=", username))
+
         if student:
-            coaccount = student.co_account_1 if coaccount_nbr == "1" else student.co_account_2 if coaccount_nbr == "2" else current_user.username
+            coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=", username), ('coaccount_nbr', "=", coaccount_nbr)])
             document = dl.document.add({
                 "document_type": document_type,
-                "co_account": coaccount,
+                "co_account": coaccount.coaccount_name,
                 "timestamp": now,
                 "naam_voornaam": student.naam + " " + student.voornaam,
                 "username": student.username,
@@ -58,7 +59,12 @@ def add(request):
                         file_extension = "pdf"
                     else:
                         mimetype = file.mimetype
-                    dl.document.update(document, {"name": f"{filename}.{file_extension}", "file_type": mimetype})
+                    from_day = request.form.get("from_day")
+                    if from_day != "":
+                        nbr_days = int(request.form.get("nbr_days"))
+                        dl.document.update(document, {"name": f"{filename}.{file_extension}", "file_type": mimetype, "from_day": from_day, "nbr_days": nbr_days})
+                    else:
+                        dl.document.update(document, {"name": f"{filename}.{file_extension}", "file_type": mimetype})
                     if file.mimetype.startswith("image/"):  # images are transformed into pdf
                         img_bytes = file.read()
                         file.stream.seek(0)

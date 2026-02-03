@@ -11,24 +11,9 @@ $(document).ready(async function () {
     const new_document_btn = document.getElementById("new-document-btn");
     const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
-    student_div.innerHTML = `Leerling: ${meta.current_user.naam_voornaam}`
+    student_div.innerHTML = `Leerling: ${meta.current_user.student}`
     const ctx = {ouderattest: {days: 0, nbr: 0}};
 
-
-    document_field.addEventListener("change", async e => {
-        const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
-        const data = new FormData();
-        data.append("document_type", "medischattest");
-        data.append("username", meta.current_user.username)
-        data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
-        const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
-        const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
-        data.append("attachment_file", resized_image);
-        const resp = await fetch_post("document.document", data, true);
-        patience.close();
-        document_field.value = null;
-        __handle_add_response(resp);
-    });
 
     const __handle_add_response = resp => {
         if (resp.document) {
@@ -39,12 +24,12 @@ $(document).ready(async function () {
             document_list.insertBefore(div, document_list.firstChild);
             if (resp.document.document_type === "ouderattest") {
                 ctx.ouderattest.days += resp.document.nbr_days;
-                ctx.ouderattest.nbr ++;
+                ctx.ouderattest.nbr++;
             }
         }
     }
 
-    const __show_document_content = async event => {
+    const __show_attest = async event => {
         const div = event.target.closest("div");
         const documents = await fetch_get("document.document", {filters: `id$=$${div.dataset.id}`});
         if (documents.length > 0) {
@@ -93,34 +78,15 @@ $(document).ready(async function () {
         }
     }
 
-
-    const __new_document = async () => {
-        let document_type = null;
+    const __new_attest = async () => {
         const result = await Swal.fire({
-            title: "Type document?",
+            title: "Type attest?",
             html: `
                 <select id="document-type-select">
                     <option value="none">Maak uw keuze</option>
                     <option value="medischattest">Medisch attest</option>
                     <option value="ouderattest">Ouderattest</option>
-                </select>
-                <div id="medischattest-info" hidden>
-                    <img src="static/img/take-picture-of-document.png" width=150px><br>
-                    Leg het document plat en gebruik eventueel plakband of een gewicht.<br>
-                    Zorg voor een goede belichting.<br>
-                    Op de smartphone moet het hele document zichtbaar zijn.<br>
-                    Houd het toestel recht boven het document.
-                </div>
-                <div id="ouderattest-info" style="text-align: left;" hidden>
-                    Een <b>medisch attest</b> is vereist voor:
-                    <ol><li>Afwezigheden van meer dan 3 opeenvolgende kalenderdagen.</li>
-                    Afwezigheden van meer dan 10 lesdagen: attest onmiddellijk aan de school bezorgen.
-                    <li>Elke afwezigheid wegens ziekte nadat de leerling reeds vier maal afwezig was zonder medisch attest.</li>
-                    <li>Elke afwezigheid tijdens de syntheseproeven of bij excursies.</li></ol><br>
-                    <b>Elke afwezigheid anders dan ziekte vereist vooraf de toestemming van de directie.</b>
-                    </ol>                
-                    </div>
-                  `,
+                </select> `,
             showCloseButton: true,
             showCancelButton: true,
             focusConfirm: false,
@@ -130,33 +96,107 @@ $(document).ready(async function () {
             cancelButtonAriaLabel: "Annuleer",
             preConfirm: () => {
                 const document_type_select = document.getElementById("document-type-select");
-                document_type = document_type_select.value;
-                if (document_type === "none") {
+                if (document_type_select.value === "none") {
                     document_type_select.style.borderColor = "red";
                     document_type_select.style.borderWidth = "thick";
                     return false;
                 } else return true;
             },
-            didRender: () => {
-                document.getElementById("document-type-select").addEventListener("change", e => {
-                    document.getElementById("medischattest-info").hidden = true;
-                    document.getElementById("ouderattest-info").hidden = true;
-                    if (e.target.value === "medischattest") {
-                        document.getElementById("medischattest-info").hidden = false;
-                    } else {
-                        document.getElementById("ouderattest-info").hidden = false;
-                    }
-                });
-
-            }
         });
         if (result.isConfirmed) {
             const document_type_select = document.getElementById("document-type-select");
+            Swal.close();
             if (document_type_select.value === "medischattest") {
-                // Save, resize and send to server
-                document_field.click();
+                __new_medisch_attest()
             } else if (document_type_select.value === "ouderattest") {
                 __new_oudersattest();
+            }
+        }
+    }
+
+    // should be called only once, else duplicate attests are saved when more than one attest is saved.
+    let new_nbr_of_days = 0;
+    let from_day_value = null;
+    document_field.addEventListener("change", async e => {
+        const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
+        const data = new FormData();
+        data.append("from_day", from_day_value);
+        data.append("nbr_days", new_nbr_of_days);
+        data.append("document_type", "medischattest");
+        data.append("username", meta.current_user.username)
+        data.append("coaccount_nbr", meta.current_user.coaccount_nbr);
+        data.append("document_scan", true);
+        const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
+        const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
+        data.append("attachment_file", resized_image);
+        const resp = await fetch_post("document.document", data, true);
+        patience.close();
+        document_field.value = null;
+        __handle_add_response(resp);
+    });
+
+    const __new_medisch_attest = async () => {
+        const now = new Date()
+        const result = await Swal.fire({
+            title: "Nieuw medisch attest",
+            html: `
+                <div style="text-align:left;">
+                    Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
+                    Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day", value=${now}><br>
+                    t.e.m.: <input type="date" id="absent-till-day"><br>
+                </div> `,
+            showCloseButton: true,
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: `Ok`,
+            confirmButtonAriaLabel: "Ok",
+            cancelButtonText: `Annuleer `,
+            cancelButtonAriaLabel: "Annuleer",
+            preConfirm: () => {
+                from_day_value = document.getElementById("absent-from-day").value;
+                const from_day = new Date(from_day_value);
+                const till_day_date_select = document.getElementById("absent-till-day");
+                const till_day_value = till_day_date_select.value;
+                if (till_day_value === "") {
+                    till_day_date_select.style.borderColor = "red";
+                    till_day_date_select.style.borderWidth = "thick";
+                    return false
+                }
+                const till_day = new Date(till_day_value);
+                if (till_day < from_day) {
+                    Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
+                    return false
+                }
+                new_nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
+                return true
+            },
+            didRender: () => {
+                const today = new Date().toISOString().split("T")[0];
+                document.getElementById("absent-from-day").value = today;
+            }
+        });
+        if (result.isConfirmed) {
+            const result = await Swal.fire({
+                title: "Nieuw medisch attest",
+                html: `
+                <div>
+                    <img src="static/img/take-picture-of-document.png" width=150px><br>
+                    Leg het document plat en gebruik eventueel plakband of een gewicht.<br>
+                    Zorg voor een goede belichting.<br>
+                    Op de smartphone moet het hele document zichtbaar zijn.<br>
+                    Houd het toestel recht boven het document.
+                </div>
+                  `,
+                showCloseButton: true,
+                showCancelButton: true,
+                focusConfirm: false,
+                confirmButtonText: `Ok`,
+                confirmButtonAriaLabel: "Ok",
+                cancelButtonText: `Annuleer `,
+                cancelButtonAriaLabel: "Annuleer",
+            });
+            if (result.isConfirmed) {
+                document_field.click();
             }
         }
     }
@@ -167,26 +207,26 @@ $(document).ready(async function () {
         let from_day_value = null;
         let from_day = null;
         const result = await Swal.fire({
-            title: "Ouderattest",
+            title: "Nieuw ouderattest",
             html: `
-                        <div style="text-align:left;">
-                            Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
-                            Naam: ${meta.student.naam}<br>
-                            Voornaam: ${meta.student.voornaam}<br>
-                            Klas: ${meta.student.klasgroep}<br>
-                            <select id="nbr-days-select">
-                                <option value="none">Hoeveel dagen afwezig?</option>
-                                <option value="one-day">Eén dag</option>
-                                <option value="more-days">Twee of meer</option>
-                            </select>
-                            <div id="one-day-div" hidden>
-                                Was afwezig vanwege ziekte op : <input type="date" id="absent-on-day"><br>
-                            </div>
-                            <div id="more-days-div" hidden>
-                                Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day"><br>
-                                t.e.m.: <input type="date" id="absent-till-day"><br>
-                            </div>
-                        </div>
+                <div style="text-align:left;">
+                    Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
+                    Naam: ${meta.student.naam}<br>
+                    Voornaam: ${meta.student.voornaam}<br>
+                    Klas: ${meta.student.klasgroep}<br>
+                    <select id="nbr-days-select">
+                        <option value="none">Hoeveel dagen afwezig?</option>
+                        <option value="one-day">Eén dag</option>
+                        <option value="more-days">Twee of meer</option>
+                    </select>
+                    <div id="one-day-div" hidden>
+                        Was afwezig vanwege ziekte op : <input type="date" id="absent-on-day"><br>
+                    </div>
+                    <div id="more-days-div" hidden>
+                        Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day"><br>
+                        t.e.m.: <input type="date" id="absent-till-day"><br>
+                    </div>
+                </div>
                   `,
             showCloseButton: true,
             showCancelButton: true,
@@ -257,6 +297,7 @@ $(document).ready(async function () {
             data.append("from_day", from_day_value);
             data.append("nbr_days", new_nbr_of_days);
             data.append("document_type", "ouderattest");
+            data.append("document_scan", false);
             data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
             data.append("username", meta.current_user.username)
             const resp = await fetch_post("document.document", data, true);
@@ -279,8 +320,8 @@ $(document).ready(async function () {
     }
 
     // When clicked on a document in the list, show the content
-    document_list.addEventListener("click", async event => __show_document_content(event));
+    document_list.addEventListener("click", async event => __show_attest(event));
 
     // New document button clicked
-    new_document_btn.addEventListener("click", async () => __new_document());
+    new_document_btn.addEventListener("click", async () => meta.current_user.coaccount_nbr === 0 ? __new_medisch_attest() : __new_attest());
 });

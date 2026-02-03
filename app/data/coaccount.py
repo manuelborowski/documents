@@ -15,7 +15,8 @@ class Coaccount(UserMixin, db.Model, SerializerMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(256))
-    naam_voornaam = db.Column(db.String(256))
+    student = db.Column(db.String(256))
+    coaccount_name = db.Column(db.String(256))
     coaccount_nbr = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime())
 

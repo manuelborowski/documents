@@ -135,15 +135,16 @@ def login_ss():
                 if user_agent.is_mobile:
                     return redirect(url_for(app.config["MENU_MOBILE_DEFAULT"]))
                 return redirect(url_for(app.config["MENU_DEFAULT"]))
-            elif profile['basisrol'] == "Leerling" and profile["isMainAccount"] == 0:
+            elif profile['basisrol'] == "Leerling":
                 # co-accounts of students are allowed to login
-                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('co_account', "=", profile["nrCoAccount"])])
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('coaccount_nbr', "=", profile["nrCoAccount"])])
                 profile["coaccount_nbr"] = profile["nrCoAccount"]
+                profile['student'] = profile['surname'] + " " + profile['name']  # student name and surname
+                coaccount_name_list = profile["fullname"].split(",")
+                profile['coaccount_name'] = coaccount_name_list[0]
                 if coaccount:
-                    profile['naam_voornaam'] = profile['surname'] + " " + profile['name'] # student name and surname
                     coaccount = dl.models.update(dl.coaccount.Coaccount, coaccount, profile, timestamp=True)
                 else:
-                    profile['naam_voornaam'] = profile['surname'] + " " + profile['name'] # student name and surname
                     coaccount = dl.models.add(dl.coaccount.Coaccount, profile, timestamp=True)
                 login_user_type(coaccount, "coaccount")
                 log.info(f'SS co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
@@ -185,16 +186,12 @@ def login_test():
                     break
             if profile:
                 # co-accounts of students are allowed to login
-                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('coaccount_nbr', "=", profile["nrCoAccount"])])
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=" ,profile['username']), ('coaccount_nbr', "=", profile["coaccount_nbr"])])
                 if not coaccount:
-                    coaccount = dl.models.add(dl.coaccount.Coaccount, {
-                        "username": profile["username"],
-                        "coaccount_nbr": profile["nrCoAccount"],
-                        "naam_voornaam": profile["naam_voornaam"],
-                    })
+                    coaccount = dl.models.add(dl.coaccount.Coaccount, profile)
                 login_user_type(coaccount, "coaccount")
                 dl.models.update(dl.coaccount.Coaccount, coaccount, {"timestamp": datetime.datetime.now()})
-                log.info(f'TEST co-account {coaccount.coaccount_nbr} user {coaccount.username} logged in')
+                log.info(f'TEST co-account {coaccount.coaccount_name} user {coaccount.username} logged in')
                 # Ok, continue
                 return redirect(url_for('document.show'))
     except Exception as e:
