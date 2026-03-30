@@ -22,3 +22,4 @@
 0.6-template-0.25-0.16: update coaccounts table, updated test login.  Student can upload medisch attest
 0.6-template-0.25-0.17: aesthetic update, display 2 buttons iso select
 0.6-template-0.25-0.18: add document, co_account nbr 5 means use staff member code
+0.6-template-0.25-0.19: patch from template 0.29 to 0.31

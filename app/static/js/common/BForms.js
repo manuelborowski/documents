@@ -127,6 +127,7 @@ export class BForms {
                     form_row.appendChild(form_element);
                     form_element.classList.add("form-element");
                     let tag = null;
+                    let extra = null;
                     if (element.type === "div") {
                         tag = document.createElement("div");
                         form_element.appendChild(tag);
@@ -159,6 +160,22 @@ export class BForms {
                             tag = document.createElement("select");
                         } else if (element.type === "input") {
                             tag = document.createElement("input");
+                        } else if (element.type === "password") {
+                            tag = document.createElement("input");
+                            tag.type = "password";
+                            extra = document.createElement("button");
+                            extra.innerHTML = '<i class="uil uil-eye-slash"></i>';
+                            extra.addEventListener("click", e => {
+                                e.preventDefault();
+                                console.log("pushed")
+                                if (extra.innerHTML === '<i class="uil uil-eye-slash"></i>') {
+                                    extra.innerHTML = '<i class="uil uil-eye"></i>';
+                                    tag.type = "text";
+                                } else {
+                                    extra.innerHTML = '<i class="uil uil-eye-slash"></i>';
+                                    tag.type = "password";
+                                }
+                            });
                         } else if (element.type === "date") {
                             tag = document.createElement("input");
                             tag.type = "date"
@@ -166,6 +183,7 @@ export class BForms {
                         if (tag) {
                             label.appendChild(span);
                             label.appendChild(tag);
+                            if (extra) label.appendChild(extra);
                             if (format) {
                                 if (format === "vertical-center") {
                                     label.classList.add("vertical-center-label");

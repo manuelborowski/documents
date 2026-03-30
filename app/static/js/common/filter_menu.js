@@ -63,6 +63,7 @@ export class FilterMenu {
                         if ("cb" in this.menu_cache[e.target.id]) this.menu_cache[e.target.id].cb(e.target.checked);
                         this.changed_cb(e.target.id, e.target.checked);
                     });
+                    checkbox.checked = this.filter_cache[item.id]
                 } else if (item.type === "button") {
                     const button = document.createElement("a");
                     form_group.appendChild(button);

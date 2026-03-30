@@ -1,11 +1,11 @@
 import {AlertPopup} from "../common/popup.js";
 
+// select and bool columns have a render function attached, so that, depending on the value, the corect label is displayed
 export class CellEdit {
     select_options = {}; // dict of columnnumber => dict of value => label
     columns = {}; // columnnumber => {type, options, ...}
 
-    constructor(table, template, changed_cb) {
-        this.table = table;
+    constructor(template, changed_cb) {
         this.update_cb = changed_cb
         this.input_css = "celledit-input";
         for (let i = 0; i < template.length; i++) {
@@ -16,12 +16,20 @@ export class CellEdit {
                     this.columns[i].options = [];
                     this.select_options[i] = {};
                     celledit.options.forEach(o => {
-                        this.columns[i].options.push({value: o[0], display: o[1]});
-                        this.select_options[i][o[0]] = o[1];
+                        this.columns[i].options.push({value: String(o[0]), display: o[1]});
+                        this.select_options[i][String(o[0])] = o[1];
                     });
+                    template[i].render = (v, t, r, m) => {
+                        if (t !== "display") return v;
+                        return this.select_options[m.col][v];
+                    }
                 }
             }
         }
+    }
+
+    attach_to_table(table) {
+        this.table = table;
         if (this.columns !== {}) {
             this.attach_handler();
         }
@@ -49,6 +57,7 @@ export class CellEdit {
             case "select":
             case "bool":
                 const $select = $(`<select class="${this.input_css}"></select>`);
+                old_value = String(old_value);
                 $.each(column_config.options, function (index, option) {
                     const selected = old_value === option.value ? "selected" : "";
                     const $option_element = $(`<option value=${option.value} ${selected} style="z-index: 1000">${option.display}</option>`);
@@ -101,12 +110,14 @@ export class CellEdit {
         let old_value = $dt_cell.data();
         let new_value = event.currentTarget.value;
         if (column_config.type === "select") {
-            $dt_cell.data(this.select_options[column_index][new_value]);
+            $dt_cell.data(new_value);
+        } else if (column_config.type === "date") {
+            $dt_cell.data(new_value);
         } else if (column_config.type === "date") {
             $dt_cell.data(new_value);
         } else if (column_config.type === "bool") {
-            $dt_cell.data(this.select_options[column_index][new_value]);
             new_value = new_value === "true";
+            $dt_cell.data(new_value);
         } else if (["text-confirmkey", "text"].includes(column_config.type)) {
             $dt_cell.data(new_value);
         } else if (["int", "int-confirmkey"].includes(column_config.type)) {

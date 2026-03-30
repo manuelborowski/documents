@@ -9,6 +9,7 @@ log = logging.getLogger(f"{top_log_handle}.{__name__}")
 log.addFilter(MyLogFilter())
 
 filter_operators = ["$=$", "$!$", "$>$", "$<$", "$>=$", "$<=$", "$l$"]
+value_keyword = {"null": None, "true": True, "false": False}
 
 # fields=geboortedatum,geboorteplaats,voornaam&filters=geboorteplaats=wilrijk,-voornaam=joren
 # fields are the properties request.  If not present, all properties are returned
@@ -17,6 +18,7 @@ filter_operators = ["$=$", "$!$", "$>$", "$<$", "$>=$", "$<=$", "$l$"]
 # start and stop (if not none) indicate the slice that needs to be taken from the data
 def process_options(options):
     try:
+        active = True
         if options:
             fields = options['fields'].split(',') if 'fields' in options else []
             filters = []
@@ -25,27 +27,29 @@ def process_options(options):
                     for operator in filter_operators:
                         if operator in filter:
                             k, v = filter.split(operator)
-                            if v == "null":
-                                v = None
-                            filters.append((k, operator[1:-1], v))
+                            if v in value_keyword:
+                                v = value_keyword[v]
+                            if k == "active" and operator == "$=$":
+                                active = v
+                            else:
+                                filters.append((k, operator[1:-1], v))
                             break
             start = int(options["start"]) if "start" in options else None
             stop = int(options["stop"]) if "stop"in options else None
             order_by = options["order_by"] if "order_by" in options else None
-            return fields, filters, order_by, start, stop
-        return None, None, None, None, None
+            return fields, filters, order_by, start, stop, active
+        return None, None, None, None, None, True
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
-        return {"status": True, "data": e}
-
+        return None, None, None, None, None, True
 
 # generic function to retrieve model data (from the database)
 # model is the model required
 # options is a string with fields and filters (see above)
 def get(model, options=None):
     try:
-        fields, filters, order_by, start, stop = process_options(options)
-        items = mmodels.get_m(model, filters=filters, fields=fields, order_by=order_by, start=start, stop=stop)
+        fields, filters, order_by, start, stop, active = process_options(options)
+        items = mmodels.get_m(model, filters=filters, fields=fields, order_by=order_by, start=start, stop=stop, active=active)
         if fields:
             # if only a limited number of properties is required, it is possible that some properties must be converted to a string (e.g. datetime and date) because these cannot be
             # serialized to json

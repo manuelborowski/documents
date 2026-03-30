@@ -10,7 +10,7 @@ from werkzeug.routing import IntegerConverter
 
 # Warning: update flask_jsglue.py: from markupsafe import Markup
 
-version = "0.6-template-0.25-0.18"
+version = "0.6-template-0.25-0.19"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

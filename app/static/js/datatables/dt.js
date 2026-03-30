@@ -68,6 +68,17 @@ export function datatable_filter(column_name, value) {
     ctx.table.column(column_idx).search(value).draw();
 }
 
+// filters = array of objects
+// object = {column: "aa", value: 12}
+export function datatable_filter_on_list(filters = []) {
+    ctx.table.columns().search("");
+    filters.forEach(f => {
+        let column_idx = datatable_column2index[f.column];
+        ctx.table.column(column_idx).search(f.value);
+    });
+    ctx.table.draw();
+}
+
 export function datatable_rows_add(rows) {
     ctx.table.rows.add(rows).draw();
 }
@@ -91,7 +102,15 @@ export function datatable_reload_table() {
 
 const __filter_changed_cb = (id, value) => {
     if (ctx.server_side) datatable_reload_table();
+    if (ctx.callbacks.filter_changed) ctx.callbacks.filter_changed(id, value);
 }
+
+    const __cell_edit_changed_cb = async ($dt_row, column_index, new_value, old_value) => {
+        const value = ctx.config.template[column_index].celledit.value_type === 'int' ? parseInt(new_value) : new_value; // deprecated, user type "int" and new_value is of type int
+        const column_name = ctx.table.column(column_index).dataSrc()
+        await fetch_update(`${ctx.config.view}.${ctx.config.view}`, {id: $dt_row.data().DT_RowId, [column_name]: value});
+        if (ctx.callbacks.cell_edit) ctx.callbacks.cell_edit($dt_row.data().DT_RowId, column_name, value);
+    }
 
 export const datatables_init = ({config = null, context_menu_items = [], filter_menu_items = [], action_menu_items = [], callbacks = {}, initial_data = null} = {}) => {
     // If a table already exist, remove it
@@ -101,6 +120,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
     }
     config = config || table_config; // default, use config via server -> view -> render_template(...) or overwrite from caller
     ctx.config = config;
+    ctx.callbacks = callbacks;
     const table = document.createElement("table");
     table.id = "datatable";
     const th = document.createElement("thead");
@@ -128,6 +148,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
     ctx.context_menu = new ContextMenu(document.querySelector("#datatable"), context_menu_items);
     ctx.context_menu.subscribe_get_ids(mouse_get_ids);
     ctx.filter_menu = new FilterMenu(document.querySelector(".filter-menu-placeholder"), filter_menu_items, __filter_changed_cb, ctx.config.view);
+    ctx.cell_edit = new CellEdit(ctx.config.template, __cell_edit_changed_cb);
 
     ctx.server_side = initial_data === null; // Get data from te server
 
@@ -173,7 +194,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
         }
     }
 
-    const render = (v) => {
+    const create_render = (v) => {
         if ("ellipsis" in v) return_render_ellipsis(v.ellipsis.cutoff, v.ellipsis.wordbreak, true);
         if ("bool" in v) return (data, type, full, meta) => data === true ? "&#10003;" : "";
         if ("label" in v) return (data, type, full, meta) => v.label.labels[data]
@@ -187,11 +208,14 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
         if ("less" in v) return (data, type, full, meta) => data < v.less.than ? ("then" in v.less ? v.less.then : data) : ("else" in v.less ? v.less.else : data)
         if ("display" in v) return (data, type, full, meta) => render_display(data, type, full, meta, v.display);
         if ("equal" in v) return (data, type, full, meta) => data === v.equal.to ? render_display(data, type, full, meta, v.equal.then) : render_display(data, type, full, meta, v.equal.else);
+        return null
     };
 
     // check special options in the columns
     $.each(ctx.config.template, (i, v) => {
-        v.render = render(v);
+        const render = create_render(v);
+        if (render)
+            v.render = render;
         datatable_column2index[v.data] = i;
     })
 
@@ -226,14 +250,6 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
         // This callback is executed each time the table is reloaded or a value is changed.
         rowCallback: function (row, data, displayNum, displayIndex, dataIndex) {
             if (data.row_action !== null) row.cells[0].innerHTML = `<input type='checkbox' class='chbx_all' name='chbx' value='${data.row_action}' ${data.disable_selectbox ? "disabled" : ""}>`
-            // celledit of type select: overwrite cell content with label from optionlist
-            if (cell_edit.select_options) {
-                for (const [column, select] of Object.entries(cell_edit.select_options)) {
-                    if (column_shifter[column] !== null) {
-                        row.cells[column_shifter[column]].innerHTML = select[row.cells[column_shifter[column]].innerHTML];
-                    }
-                }
-            }
             if (callbacks.row_callback) {
                 const res = callbacks.row_callback(data, row);
                 if (res) res.forEach(c => row.cells[c.index].innerHTML = c.value);
@@ -261,6 +277,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
                 dt_container.style.marginLeft = "auto";
                 dt_container.style.marginRight = "auto";
             }
+            if (ctx.callbacks.init_complete) ctx.callbacks.init_complete()
         },
         stateSaveCallback: function (settings, data) {
             localStorage.setItem(`DatatableState-${ctx.config.view}`, JSON.stringify(data));
@@ -293,6 +310,7 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
     DataTable.type('date', 'className', 'dt-left');
     DataTable.defaults.column.orderSequence = ['desc', 'asc'];
     ctx.table = new DataTable('#datatable', datatable_config);
+    ctx.cell_edit.attach_to_table(ctx.table);
 
     // if columns are invisible, the column index in rowCallback is reduced, depending on the invisible columns.
     // create a translation table to go from actual column index to the reduced (with invisible columns) column index
@@ -302,19 +320,11 @@ export const datatables_init = ({config = null, context_menu_items = [], filter_
         ctx.table.draw();
     });
 
-    const __cell_edit_changed_cb = async ($dt_row, column_index, new_value, old_value) => {
-        const value = ctx.config.template[column_index].celledit.value_type === 'int' ? parseInt(new_value) : new_value; // deprecated, user type "int" and new_value is of type int
-        const column_name = ctx.table.column(column_index).dataSrc()
-        // update_cell_changed({id: $dt_row.data().DT_RowId, column: column_name, value});
-        await fetch_update(`${ctx.config.view}.${ctx.config.view}`, {id: $dt_row.data().DT_RowId, [column_name]: value});
-        if (callbacks.cell_edit) callbacks.cell_edit($dt_row.data().DT_RowId, column_name, value);
-    }
 
     const cell_toggle_changed_cb = async (cell, row, value) => {
         await fetch_update(`${ctx.config.view}.${ctx.config.view}`, {id: row.data().DT_RowId, [cell.index().column]: value});
     }
 
-    const cell_edit = new CellEdit(ctx.table, ctx.config.template, __cell_edit_changed_cb);
 
     //checkbox in header is clicked
     $("#select_all").change(function () {
