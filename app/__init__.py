@@ -10,31 +10,7 @@ from werkzeug.routing import IntegerConverter
 
 # Warning: update flask_jsglue.py: from markupsafe import Markup
 
-# 0.1 copy from stopwatch 0.16
-# 0.2: log in via s, upload document, take picture of document.
-# 0.3: added documents page
-# 0.4: first deployment
-# 0.5: add test student
-# 0.6: improved popups.  Compress image
-# 0.6-template-0.25-0.1: updated architecture to template-0.25
-# 0.6-template-0.25-0.2: users and coaccounts are different tables.
-# 0.6-template-0.25-0.3: added test-coaccount-url
-# 0.6-template-0.25-0.4: requirements.txt
-# 0.6-template-0.25-0.5: update documents.js, added active-flag to documents
-# 0.6-template-0.25-0.6: reduced size of photo to 100kB.  Export documents
-# 0.6-template-0.25-0.7: on students page, add medischattest
-# 0.6-template-0.25-0.8: small bugfix.  Improved contextmenu handling
-# 0.6-template-0.25-0.9: test, authenticate new logins.  Mobile, add input-checks
-# 0.6-template-0.25-0.10: fixed issue with uploading photo
-# 0.6-template-0.25-0.11: when syncing with SDH, skip test/default students
-# 0.6-template-0.25-0.12: update datatables, filter-menu and cell-edit.  Ouderattest, bugfix to max nbr of attests, not days.  Added document-processed functionality
-# 0.6-template-0.25-0.13: scan ouderattest, copy/paste ouderattest
-# 0.6-template-0.25-0.14: syntax typo
-# 0.6-template-0.25-0.15: edge specific, display datepicker
-# 0.6-template-0.25-0.16: update coaccounts table, updated test login.  Student can upload medisch attest
-# 0.6-template-0.25-0.17: aesthetic update, display 2 buttons iso select
-
-version = "0.6-template-0.25-0.17"
+version = "0.6-template-0.25-0.18"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 

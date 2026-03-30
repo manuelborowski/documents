@@ -26,10 +26,15 @@ def add(request):
         student = dl.student.get(("username", "=", username))
 
         if student:
-            coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=", username), ('coaccount_nbr', "=", coaccount_nbr)])
+            # 5 is a special case where staff adds a document
+            if coaccount_nbr == "5":
+                coaccount_name = current_user.username
+            else:
+                coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=", username), ('coaccount_nbr', "=", coaccount_nbr)])
+                coaccount_name = coaccount.coaccount_name
             document = dl.document.add({
                 "document_type": document_type,
-                "co_account": coaccount.coaccount_name,
+                "co_account": coaccount_name,
                 "timestamp": now,
                 "naam_voornaam": student.naam + " " + student.voornaam,
                 "username": student.username,
@@ -59,7 +64,7 @@ def add(request):
                         file_extension = "pdf"
                     else:
                         mimetype = file.mimetype
-                    from_day = request.form.get("from_day")
+                    from_day = value if (value := request.form.get("from_day")) is not None else ""
                     if from_day != "":
                         nbr_days = int(request.form.get("nbr_days"))
                         dl.document.update(document, {"name": f"{filename}.{file_extension}", "file_type": mimetype, "from_day": from_day, "nbr_days": nbr_days})
