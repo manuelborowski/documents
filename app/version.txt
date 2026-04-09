@@ -24,3 +24,4 @@
 0.6-template-0.25-0.18: add document, co_account nbr 5 means use staff member code
 0.6-template-0.25-0.19: patch from template 0.29 to 0.31
 0.7 merged 0.6-template-0.25-0.19 into 0.6
+0.8 added document-type-labels.  Added code R and Code P documents.

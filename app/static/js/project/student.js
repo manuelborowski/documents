@@ -1,20 +1,14 @@
 import {datatable_row_data_from_id, datatables_init} from "../datatables/dt.js";
-import {fetch_post} from "../common/common.js";
+import {fetch_get, fetch_post} from "../common/common.js";
 
-async function __scan_medisch_attest(ids) {
-    __scan__attest(ids[0], "medischattest");
-}
-
-async function __scan_ouder_attest(ids) {
-    __scan__attest(ids[0], "ouderattest");
-}
+const meta = await fetch_get("document.meta");
 
 // Enables the webcam, display a preview and a capture and load button.
 // When the capture button is pressed, a still is taken
 // When the load button is pressed, an image can be uploaded
 // A new popup appears to crop the still/image and send it to the server
-async function __scan__attest(id, type) {
-    const student = datatable_row_data_from_id(id);
+async function __scan_attest(ids, type, label) {
+    const student = datatable_row_data_from_id(ids[0]);
     const webcamHTML = `
           <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
           <div style="height: 600px;"> <video id="swal-video" autoplay playsinline style="width:100%;margin-top:100px;"> </video> </div>
@@ -25,7 +19,7 @@ async function __scan__attest(id, type) {
           <input type="file" id="file-input" accept="image/*" style="display:none;">
           </div> `;
     const result = await Swal.fire({
-        title: `Nieuw ${type === "medischattest" ? "medisch " : "ouder"}attest voor ${student.naam} ${student.voornaam}`,
+        title: `${label} voor ${student.naam} ${student.voornaam}`,
         html: webcamHTML,
         showCancelButton: false,
         showConfirmButton: false,
@@ -86,12 +80,22 @@ async function __scan__attest(id, type) {
     });
 }
 
-async function __paste_ouder_attest(ids) {
+async function __paste_attest(ids, type, label) {
     const student = datatable_row_data_from_id(ids[0]);
     let pastedBlob = null;
     const result = await Swal.fire({
-        title: `Plak een nieuw ouderattest voor ${student.naam} ${student.voornaam}`,
-        html: ` <div id="preview" style="margin-top:10px"></div> `,
+        title: `Plak een ${label} voor ${student.naam} ${student.voornaam}`,
+        html: `
+            <div style="text-align:left">
+             Open knipprogramma<br>
+             klik op nieuw/plusteken (ctrl-n)<br>
+             Maak een selectie<br>
+             Kopiëer de tekst (ctrl-c)<br>
+             Klik hier<br>
+             Plak de tekst (ctrl-v)<br>
+             Klik op bewaar
+             </div>  
+            <div id="preview" style="margin-top:10px"></div> `,
         showCancelButton: false,
         confirmButtonText: "Bewaar",
         width: "700px",
@@ -119,7 +123,6 @@ async function __paste_ouder_attest(ids) {
 
     if (result.isConfirmed) {
         try {
-            const type = "ouderattest";
             const data = new FormData();
             const resized_image = new File([result.value], `${type}.jpg`, {type: result.value.type, lastModified: Date.now()})
             data.append("document_type", type);
@@ -133,7 +136,6 @@ async function __paste_ouder_attest(ids) {
         }
     }
 }
-
 
 async function start_cropping_and_send_to_server(base64_image, student, type) {
     const cropper_html = `
@@ -186,11 +188,9 @@ async function start_cropping_and_send_to_server(base64_image, student, type) {
     }
 }
 
-const context_menu_items = [
-    {type: "item", label: 'Scan medisch attest', iconscout: 'camera', cb: __scan_medisch_attest},
-    {type: "item", label: 'Scan ouderattest', iconscout: 'camera', cb: __scan_ouder_attest},
-    {type: "item", label: 'Kopieer/Plak ouderattest', iconscout: 'camera', cb: __paste_ouder_attest},
-]
+const context_menu_items =
+    Object.entries(meta.document_type_labels).map(([t, l]) => ({type: "item", label: `Scan ${l}`, iconscout: "camera", cb: ids => __scan_attest(ids, t, l)})).concat(
+    Object.entries(meta.document_type_labels).map(([t, l]) => ({type: "item", label: `Plak ${l}`, iconscout: "copy", cb: ids => __paste_attest(ids, t, l)})));
 
 $(document).ready(function () {
     const ctx = datatables_init({context_menu_items});

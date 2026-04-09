@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required, current_user
+import json
+from user_agents import parse
 
 from app.data.datatables import DatatableConfig
 from app.presentation.view import datatable_get_data
-import json
-from user_agents import parse
-from app import application as al, data as dl
+from app import application as al, data as dl, app
 
 #logging on file level
 import logging
@@ -44,7 +44,7 @@ def meta():
 
     schools = dl.document.get_m(fields = ["school"], distinct=True)
     schools = [s[0] for s in schools if s[0] != None]
-    return json.dumps({"schools": schools})
+    return json.dumps({"schools": schools, "document_type_labels": app.config["DOCUMENT_TYPE_LABELS"]})
 
 @bp_document.route('/document', methods=['POST', "GET", "UPDATE", "DELETE"])
 @login_required
@@ -67,7 +67,6 @@ def document():
 @login_required
 def export():
     return al.document.export(request.args["ids"].split(","))
-    return send_file(directory, file, as_attachment=True)
 
 class Config(DatatableConfig):
     def pre_sql_query(self):
@@ -78,5 +77,12 @@ class Config(DatatableConfig):
 
     def pre_sql_search(self, search):
         return dl.document.pre_sql_search(search)
+
+    def post_process_template(self, template):
+        document_type_labels = app.config["DOCUMENT_TYPE_LABELS"]
+        for column in template:
+            if column["data"] == "document_type":
+                column["label"] = {"labels": document_type_labels}
+        return template
 
 config = Config("document", "Documenten")

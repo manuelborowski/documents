@@ -15,19 +15,27 @@ log.addFilter(MyLogFilter())
 import base64, subprocess, tempfile
 from pathlib import Path
 
+# Document capture: scan (take or upload a photo), copy-paste (from a print-screen) or form (fill out a form)
+# Scan and copy-paste is a photo of the document
+# Creator: staff or parent (could be student in case of medisch attest)
+# Types of documents:
+#               medisch attest | ouderattest | code-R | code-P
+# scan        |    S / P       |    S        |    S   |   S
+# copy-paste  |    S           |    S        |    S   |   S
+# form        |    X           |    P        |    X   |   X
+
 def add(request):
     try:
         document_type = request.form.get("document_type")
-        document_scan = request.form.get("document_scan", False) == "true"
+        document_scan = request.form.get("document_scan", False) == "true" # photo, i.e. scan, upload or copy-paste
         username = request.form.get("username")
-        coaccount_nbr = request.form.get("coaccount_nbr")
+        coaccount_nbr = int(request.form.get("coaccount_nbr"))
 
         now = str(datetime.datetime.now())[0:19]
         student = dl.student.get(("username", "=", username))
-
         if student:
             # 5 is a special case where staff adds a document
-            if coaccount_nbr == "5":
+            if coaccount_nbr == 5:
                 coaccount_name = current_user.username
             else:
                 coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=", username), ('coaccount_nbr', "=", coaccount_nbr)])
@@ -45,7 +53,7 @@ def add(request):
             })
 
             if document:
-                filename = f"{"M" if document_type == "medischattest" else "O"}{student.naam}{student.voornaam}{student.klasgroep}{now}".replace(" ", "").replace(":", "")
+                filename = f"{app.config["DOCUMENT_TYPE_LABELS"][document_type]}-{student.naam}{student.voornaam}{student.klasgroep}{now}".replace(" ", "").replace(":", "")
                 if document_scan:
                     files = request.files.getlist("attachment_file")
                     file = files[0]  # file is a werkzeug.FileStorage object
@@ -152,7 +160,6 @@ def add(request):
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}
-
 
 def get(request):
     documents = []
