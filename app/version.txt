@@ -25,3 +25,4 @@
 0.6-template-0.25-0.19: patch from template 0.29 to 0.31
 0.7 merged 0.6-template-0.25-0.19 into 0.6
 0.8 added document-type-labels.  Added code R and Code P documents.
+0.9 updated ouderattest because of updated rules.  Reworked save-attest-to-file.  Updated data.models.  Student, add attest, add from/till popup.

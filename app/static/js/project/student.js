@@ -144,7 +144,7 @@ async function start_cropping_and_send_to_server(base64_image, student, type) {
     </div> 
     <button id="rotate-btn" class="swal2-confirm swal2-styled" style="background:#444; width:150px;"> Roteer 90° </button> `;
     let cropper;
-    const result = await Swal.fire({
+    const result_cropper = await Swal.fire({
         title: "Bijsnijden",
         html: cropper_html,
         confirmButtonText: "Ok",
@@ -173,16 +173,63 @@ async function start_cropping_and_send_to_server(base64_image, student, type) {
             }
         }
     });
-    if (!result.isConfirmed) return;
+    if (!result_cropper.isConfirmed) return;
     try {
-        const data = new FormData();
-        const resized_image = new File([result.value], `${type}.jpg`, {type: result.value.type, lastModified: Date.now()})
-        data.append("document_type", type);
-        data.append("document_scan", true);
-        data.append("username", student.username)
-        data.append("coaccount_nbr", 5)
-        data.append("attachment_file", resized_image);
-        await fetch_post("document.document", data, true);
+        const now = new Date()
+        let nbr_of_days = 0;
+        let from_day_value = null;
+        let from_day = null;
+        const result_date = await Swal.fire({
+            title: "Start- en einddatum",
+            html: `
+                <div style="text-align:left;">
+                    Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
+                    Van: <input type="date" id="absent-from-day"><br>
+                    Tem: <input type="date" id="absent-till-day"><br>
+                </div>
+                  `,
+            showCloseButton: true,
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: `Ok`,
+            confirmButtonAriaLabel: "Ok",
+            cancelButtonText: `Annuleer `,
+            cancelButtonAriaLabel: "Annuleer",
+            preConfirm: () => {
+                from_day_value = document.getElementById("absent-from-day").value;
+                from_day = new Date(from_day_value);
+                const till_day_date_select = document.getElementById("absent-till-day");
+                const till_day_value = till_day_date_select.value;
+                if (till_day_value === "") {
+                    till_day_date_select.style.borderColor = "red";
+                    till_day_date_select.style.borderWidth = "thick";
+                    return false
+                }
+                const till_day = new Date(till_day_value);
+                if (till_day < from_day) {
+                    Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
+                    return false
+                }
+                nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
+                return true
+            },
+            didRender: () => {
+                const today = new Date().toISOString().split("T")[0];
+                document.getElementById("absent-from-day").value = today;
+            }
+        });
+        if (result_date.isConfirmed) {
+            const data = new FormData();
+            const resized_image = new File([result_cropper.value], `${type}.jpg`, {type: result_cropper.value.type, lastModified: Date.now()})
+            data.append("document_type", type);
+            data.append("document_scan", true);
+            data.append("from_day", from_day_value);
+            data.append("nbr_days", nbr_of_days);
+            data.append("username", student.username)
+            data.append("coaccount_nbr", 5)
+            data.append("attachment_file", resized_image);
+            await fetch_post("document.document", data, true);
+        }
     } catch (err) {
         Swal.fire("Error", err.message, "error");
     }
@@ -190,7 +237,7 @@ async function start_cropping_and_send_to_server(base64_image, student, type) {
 
 const context_menu_items =
     Object.entries(meta.document_type_labels).map(([t, l]) => ({type: "item", label: `Scan ${l}`, iconscout: "camera", cb: ids => __scan_attest(ids, t, l)})).concat(
-    Object.entries(meta.document_type_labels).map(([t, l]) => ({type: "item", label: `Plak ${l}`, iconscout: "copy", cb: ids => __paste_attest(ids, t, l)})));
+        Object.entries(meta.document_type_labels).map(([t, l]) => ({type: "item", label: `Plak ${l}`, iconscout: "copy", cb: ids => __paste_attest(ids, t, l)})));
 
 $(document).ready(function () {
     const ctx = datatables_init({context_menu_items});

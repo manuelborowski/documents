@@ -17,10 +17,15 @@ def add(model, data=None, commit=True, timestamp=False):
         for k, v in data.items():
             if hasattr(obj, k):
                 expression_type = getattr(model, k).expression.type
-                if expression_type.python_type == type(v) or (isinstance(expression_type, db.Date) or isinstance(expression_type, db.DateTime)) and v == None:
+                if v is None:
+                    setattr(obj, k, v)
+                elif expression_type.python_type == type(v) or (isinstance(expression_type, db.Date) or isinstance(expression_type, db.DateTime)) and v is None:
                     setattr(obj, k, v.strip() if isinstance(v, str) else v)
-                if isinstance(expression_type, db.DateTime) and type(v) == str:
+                elif isinstance(expression_type, db.DateTime) and type(v) == str:
                     value = datetime.datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+                    setattr(obj, k, value)
+                elif isinstance(expression_type, db.Date) and type(v) == str:
+                    value = datetime.datetime.strptime(v, "%Y-%m-%d")
                     setattr(obj, k, value)
         if timestamp:
             obj.timestamp = datetime.datetime.now()

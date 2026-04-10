@@ -55,8 +55,8 @@ def document():
         params = json.loads(request.data)
         document = dl.models.get(dl.document.Document, ("id", "=", params["id"]))
         del (params["id"])
-        dl.models.update(dl.document.Document, document, params)
-        ret = []
+        document = dl.models.update(dl.document.Document, document, params)
+        ret = {"document": document.to_dict()}
     elif request.method == "DELETE":
         ret = al.document.delete(request.args["ids"].split(","))
     else: # GET
