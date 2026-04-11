@@ -53,10 +53,7 @@ def document():
         ret = al.document.add(request)
     elif request.method == "UPDATE":
         params = json.loads(request.data)
-        document = dl.models.get(dl.document.Document, ("id", "=", params["id"]))
-        del (params["id"])
-        document = dl.models.update(dl.document.Document, document, params)
-        ret = {"document": document.to_dict()}
+        ret = al.document.update(params)
     elif request.method == "DELETE":
         ret = al.document.delete(request.args["ids"].split(","))
     else: # GET

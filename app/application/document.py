@@ -24,7 +24,7 @@ from pathlib import Path
 # copy-paste  |    S           |    S        |    S   |   S
 # form        |    X           |    P        |    X   |   X
 
-def __pdf_from_scan(request, document, filename, student):
+def __pdf_from_scan(request, document,  student):
     # jpg image (scan or uploaded photo)
     from_day = document.from_day
     nbr_days = document.nbr_days
@@ -69,15 +69,14 @@ def __pdf_from_scan(request, document, filename, student):
         html_path.write_text(html, encoding="utf-8")
         if "linux" in sys.platform:
             weasy_bin = shutil.which("weasyprint")
-            subprocess.run([weasy_bin, str(html_path), f"documents/{filename}"], check=True)
+            subprocess.run([weasy_bin, str(html_path), f"documents/{document.name}"], check=True)
         else:
-            subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{filename}"], check=True)
-    log.info(f'{inspect.currentframe().f_code.co_name}: saved document "{filename}", (type) {file.content_type}, (student) {student.username}')
+            subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{document.name}"], check=True)
+    log.info(f'{inspect.currentframe().f_code.co_name}: saved document "{document.name}", (type) {file.content_type}, (student) {student.username}')
     return {"status": "ok", "msg": "Attest opgeslagen", "document": document.to_dict()}
 
-def __pdf_from_form(document, filename, student):
+def __pdf_from_form(document, student, replace = None):
     # filled in form -> generate pdf
-    now = datetime.datetime.now()
     from_day = document.from_day
     nbr_days = document.nbr_days
     till_day_date = from_day + datetime.timedelta(days=(nbr_days- 1))
@@ -95,7 +94,7 @@ def __pdf_from_form(document, filename, student):
             </head>
             <body style="font-size: xx-large;">
                 <h1><b>Ouderattest bij ziekte</b></h1>
-                <b>Datum:</b> {now}<br>
+                <b>Datum:</b> {str(document.timestamp)[:19]}<br>
                 <b>Naam:</b> {student.naam}<br>
                 <b>Voornaam:</b> {student.voornaam}<br>
                 <b>Klas:</b> {student.klasgroep}<br>
@@ -109,11 +108,14 @@ def __pdf_from_form(document, filename, student):
     with tempfile.TemporaryDirectory() as tmpdir:
         html_path = Path(tmpdir) / "index.html"
         html_path.write_text(html, encoding="utf-8")
+        if replace is not None:
+            # remove old document first
+            os.remove(f"documents/{replace}")
         if "linux" in sys.platform:
             weasy_bin = shutil.which("weasyprint")
-            subprocess.run([weasy_bin, str(html_path), f"documents/{filename}"], check=True)
+            subprocess.run([weasy_bin, str(html_path), f"documents/{document.name}"], check=True)
         else:
-            subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{filename}"], check=True)
+            subprocess.run(["C:\\Program Files\\weasyprint\\weasyprint.exe", str(html_path), f"documents/{document.name}"], check=True)
     log.info(f'{inspect.currentframe().f_code.co_name}: saved ouderattest (student) {student.username}')
     return {"status": "ok", "msg": "Attest opgeslagen", "document": document.to_dict()}
 
@@ -126,7 +128,6 @@ def add(request):
         from_day = request.form.get("from_day")
         nbr_days = int(request.form.get("nbr_days"))
 
-        now = str(datetime.datetime.now())[0:19]
         student = dl.student.get(("username", "=", username))
         if student:
             # 5 is a special case where staff adds a document
@@ -139,7 +140,7 @@ def add(request):
             document = dl.document.add({
                 "document_type": document_type,
                 "co_account": coaccount_name,
-                "timestamp": now,
+                "timestamp": datetime.datetime.now(),
                 "naam_voornaam": student.naam + " " + student.voornaam,
                 "username": student.username,
                 "roepnaam": student.roepnaam,
@@ -152,11 +153,35 @@ def add(request):
             })
             if document:
                 if document_scan:
-                    return __pdf_from_scan(request, document, filename, student)
+                    return __pdf_from_scan(request, document, student)
                 else:
-                    return __pdf_from_form(document, filename, student)
+                    return __pdf_from_form(document, student)
             log.error(f'{inspect.currentframe().f_code.co_name}: Could not save document')
             return {"status": "error", "msg": "Fout, document niet opgeslagen"}
+    except Exception as e:
+        log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
+        return {"status": "error", "msg": str(e)}
+
+def update(params):
+    try:
+        document = dl.models.get(dl.document.Document, ("id", "=", params["id"]))
+        if (document):
+            student = dl.models.get(dl.student.Student, ("username", "=", document.username))
+            if not student:
+                log.error(f'{inspect.currentframe().f_code.co_name}: student not found {document.username}')
+                return {"status": "error", "msg": f"Student {document.username} niet gevonden"}
+            # If the number of days or the start date is changed, the document needs to be generated again
+            current_name = document.name
+            document.timestamp = datetime.datetime.now()
+            if "nbr_days" in params:
+                document.nbr_days = params["nbr_days"]
+            if "from_day" in params:
+                document.from_day = params["from_day"]
+                # because the start date is changed, the document name is changed as well
+                document.name = document.name[:-14] + document.from_day + ".pdf"
+            dl.models.commit()
+            # replace the existing document
+            return __pdf_from_form(document, student, replace=current_name)
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}
