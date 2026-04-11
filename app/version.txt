@@ -27,3 +27,4 @@
 0.8 added document-type-labels.  Added code R and Code P documents.
 0.9 updated ouderattest because of updated rules.  Reworked save-attest-to-file.  Updated data.models.  Student, add attest, add from/till popup.
 0.10 cleanup saving of documents.  When start date or nbr of days changes, create new document.  When staff add an attest, ask for start date and end date.
+0.11 add document type when saving

@@ -59,6 +59,7 @@ def __pdf_from_scan(request, document,  student):
                 </style>
             </head>
             <body>
+                <b>{app.config["DOCUMENT_TYPE_LABELS"][document.document_type]}</b><br>
                 {student.naam} {student.voornaam} {student.klasgroep} {from_day} - {till_day}<br>
                 <img src="{data_uri}" alt="">
             </body>
