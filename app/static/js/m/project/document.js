@@ -98,46 +98,131 @@ $(document).ready(async function () {
         }
     }
 
-    const __new_attest = async () => {
-        const result = await Swal.fire({
-            title: "Type attest?",
-            html: `
-                <select id="document-type-select">
-                    <option value="none">Maak uw keuze</option>
-                    <option value="medischattest">Medisch attest</option>
-                    <option value="ouderattest">Ouderattest</option>
-                </select> `,
-            showCloseButton: true,
-            showCancelButton: true,
-            focusConfirm: false,
-            confirmButtonText: `Ok`,
-            confirmButtonAriaLabel: "Ok",
-            cancelButtonText: `Annuleer `,
-            cancelButtonAriaLabel: "Annuleer",
-            preConfirm: () => {
-                const document_type_select = document.getElementById("document-type-select");
-                if (document_type_select.value === "none") {
-                    document_type_select.style.borderColor = "red";
-                    document_type_select.style.borderWidth = "thick";
-                    return false;
-                } else return true;
-            },
-        });
-        if (result.isConfirmed) {
-            const document_type_select = document.getElementById("document-type-select");
-            Swal.close();
-            if (document_type_select.value === "medischattest") {
-                __new_medisch_attest()
-            } else if (document_type_select.value === "ouderattest") {
-                __new_ouderattest();
-            }
-        }
-    }
-
     // should be called only once, else duplicate attests are saved when more than one attest is saved.
     let new_nbr_of_days = 0;
     let from_day_value = null;
+    const __set_document_field_file = file => {
+        const data_transfer = new DataTransfer();
+        data_transfer.items.add(file);
+        document_field.files = data_transfer.files;
+        document_field.dispatchEvent(new Event("change", {bubbles: true}));
+    }
+
+    // Native Android file picker allows to use the camera and to pick a file.  However, when using the camera, the file-input-html-element is not triggered (no change event) and no file is generated
+    // So, use browser and video-html-element to stream the camera and take a snapshot.  This blob is converted to a file and fed to the file-input-html-element
+    const __open_camera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            await Swal.fire("Camera niet beschikbaar", "Gebruik Foto kiezen of open deze pagina via HTTPS.", "warning");
+            return;
+        }
+        let stream = null;
+        let zoom_track = null;
+        let zoom_min = 1;
+        let zoom_max = 1;
+        let zoom_step = 0.1;
+        let zoom_value = 1;
+        let pinch_start_distance = null;
+        let pinch_start_zoom = null;
+        const touch_distance = touches => Math.hypot(
+            touches[0].clientX - touches[1].clientX,
+            touches[0].clientY - touches[1].clientY
+        );
+        const set_zoom = async zoom => {
+            if (!zoom_track) return;
+            zoom_value = Math.min(zoom_max, Math.max(zoom_min, zoom));
+            zoom_value = Math.round(zoom_value / zoom_step) * zoom_step;
+            try {
+                await zoom_track.applyConstraints({advanced: [{zoom: zoom_value}]});
+            } catch (error) {
+                console.warn(error);
+            }
+        }
+        const result = await Swal.fire({
+            title: "Neem een foto",
+            html: `
+                <style>
+                    .camera-swal-popup {width:100vw !important;height:100vh !important;height:100dvh !important;padding:.25rem !important;}
+                    .camera-swal-popup .swal2-html-container {height:calc(100vh - 9rem);height:calc(100dvh - 9rem);margin:.25rem 0 0 !important;overflow:hidden !important;}
+                    .camera-swal-popup .swal2-title {padding:.25rem 1rem 0 !important;}
+                    .camera-swal-popup .swal2-actions {margin:.5rem auto 0 !important;}
+                </style>
+                <div style="height:100%;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden;touch-action:none;">
+                    <video id="camera-preview" autoplay playsinline style="width:100%;height:100%;object-fit:contain;background:#000;touch-action:none;"></video>
+                </div>
+            `,
+            grow: "fullscreen",
+            width: "100vw",
+            showCloseButton: true,
+            showCancelButton: true,
+            focusConfirm: false,
+            customClass: {
+                popup: "camera-swal-popup"
+            },
+            confirmButtonText: "Foto nemen",
+            confirmButtonAriaLabel: "Foto nemen",
+            cancelButtonText: "Annuleer",
+            cancelButtonAriaLabel: "Annuleer",
+            didOpen: async () => {
+                const video = document.getElementById("camera-preview");
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: "environment"}}});
+                    video.srcObject = stream;
+                    zoom_track = stream.getVideoTracks()[0];
+                    const capabilities = zoom_track.getCapabilities ? zoom_track.getCapabilities() : {};
+                    if (capabilities.zoom) {
+                        const settings = zoom_track.getSettings();
+                        zoom_min = capabilities.zoom.min;
+                        zoom_max = capabilities.zoom.max;
+                        zoom_step = capabilities.zoom.step || zoom_step;
+                        zoom_value = settings.zoom || zoom_min;
+                        video.addEventListener("touchstart", e => {
+                            if (e.touches.length !== 2) return;
+                            e.preventDefault();
+                            pinch_start_distance = touch_distance(e.touches);
+                            pinch_start_zoom = zoom_value;
+                        }, {passive: false});
+                        video.addEventListener("touchmove", e => {
+                            if (e.touches.length !== 2 || !pinch_start_distance) return;
+                            e.preventDefault();
+                            set_zoom(pinch_start_zoom * (touch_distance(e.touches) / pinch_start_distance));
+                        }, {passive: false});
+                        const reset_pinch = () => {
+                            pinch_start_distance = null;
+                            pinch_start_zoom = null;
+                        }
+                        video.addEventListener("touchend", reset_pinch);
+                        video.addEventListener("touchcancel", reset_pinch);
+                    }
+                } catch (error) {
+                    Swal.close();
+                    await Swal.fire("Camera niet beschikbaar", "Gebruik Foto kiezen of geef toestemming om de camera te gebruiken.", "warning");
+                }
+            },
+            preConfirm: async () => {
+                const video = document.getElementById("camera-preview");
+                if (!video.videoWidth || !video.videoHeight) {
+                    Swal.showValidationMessage("De camera is nog niet klaar. Probeer opnieuw.");
+                    return false;
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext("2d").drawImage(video, 0, 0);
+                return await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.92));
+            },
+            willClose: () => {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            }
+        });
+        if (result.isConfirmed && result.value) {
+            __set_document_field_file(new File([result.value], `medisch-attest-${Date.now()}.jpg`, {type: result.value.type}));
+        }
+    }
+
     document_field.addEventListener("change", async e => {
+        if (!e.target.files.length) return;
         const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
         const data = new FormData();
         data.append("from_day", from_day_value);
@@ -157,6 +242,26 @@ $(document).ready(async function () {
 
     const __new_medisch_attest = async () => {
         const now = new Date()
+
+        const validate_medisch_attest_dates = () => {
+            from_day_value = document.getElementById("absent-from-day").value;
+            const from_day = new Date(from_day_value);
+            const till_day_date_select = document.getElementById("absent-till-day");
+            const till_day_value = till_day_date_select.value;
+            if (till_day_value === "") {
+                till_day_date_select.style.borderColor = "red";
+                till_day_date_select.style.borderWidth = "thick";
+                return false
+            }
+            const till_day = new Date(till_day_value);
+            if (till_day < from_day) {
+                Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
+                return false
+            }
+            new_nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
+            return true
+        }
+
         const result = await Swal.fire({
             title: "Nieuw medisch attest",
             html: `
@@ -167,29 +272,16 @@ $(document).ready(async function () {
                 </div> `,
             showCloseButton: true,
             showCancelButton: true,
+            showDenyButton: true,
             focusConfirm: false,
-            confirmButtonText: `Ok`,
-            confirmButtonAriaLabel: "Ok",
+            confirmButtonText: "Camera",
+            confirmButtonAriaLabel: "Camera",
+            denyButtonText: "Foto kiezen",
+            denyButtonAriaLabel: "Foto kiezen",
             cancelButtonText: `Annuleer `,
             cancelButtonAriaLabel: "Annuleer",
-            preConfirm: () => {
-                from_day_value = document.getElementById("absent-from-day").value;
-                const from_day = new Date(from_day_value);
-                const till_day_date_select = document.getElementById("absent-till-day");
-                const till_day_value = till_day_date_select.value;
-                if (till_day_value === "") {
-                    till_day_date_select.style.borderColor = "red";
-                    till_day_date_select.style.borderWidth = "thick";
-                    return false
-                }
-                const till_day = new Date(till_day_value);
-                if (till_day < from_day) {
-                    Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
-                    return false
-                }
-                new_nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
-                return true
-            },
+            preConfirm: validate_medisch_attest_dates,
+            preDeny: validate_medisch_attest_dates,
             didRender: () => {
                 const today = new Date().toISOString().split("T")[0];
                 document.getElementById("absent-from-day").value = today;
@@ -216,8 +308,11 @@ $(document).ready(async function () {
                 cancelButtonAriaLabel: "Annuleer",
             });
             if (result.isConfirmed) {
-                document_field.click();
+                await __open_camera();
             }
+        } else if (result.isDenied) {
+            document_field.value = "";
+            document_field.click();
         }
     }
 

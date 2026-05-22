@@ -24,6 +24,20 @@ from pathlib import Path
 # copy-paste  |    S           |    S        |    S   |   S
 # form        |    X           |    P        |    X   |   X
 
+def __make_unique_document_name(filename):
+    document_path = Path("documents") / filename
+    if not document_path.exists():
+        return filename
+
+    stem = document_path.stem
+    suffix = document_path.suffix
+    counter = 1
+    while True:
+        unique_filename = f"{stem}-{counter}{suffix}"
+        if not (document_path.parent / unique_filename).exists():
+            return unique_filename
+        counter += 1
+
 def __pdf_from_scan(request, document,  student):
     # jpg image (scan or uploaded photo)
     from_day = document.from_day
@@ -137,7 +151,9 @@ def add(request):
             else:
                 coaccount = dl.models.get(dl.coaccount.Coaccount, [('username', "c=", username), ('coaccount_nbr', "=", coaccount_nbr)])
                 coaccount_name = coaccount.coaccount_name
-            filename = f"{student.naam}{student.voornaam}-{student.klasgroep}-{app.config["DOCUMENT_TYPE_LABELS"][document_type]}-{from_day}.pdf".replace(" ", "").replace(":", "-")
+            document_type_label = app.config["DOCUMENT_TYPE_LABELS"][document_type]
+            filename = f"{student.naam}{student.voornaam}-{student.klasgroep}-{document_type_label}-{from_day}.pdf".replace(" ", "").replace(":", "-")
+            filename = __make_unique_document_name(filename)
             document = dl.document.add({
                 "document_type": document_type,
                 "co_account": coaccount_name,
@@ -192,7 +208,7 @@ def get(request):
     try:
         documents = al.models.get(dl.document.Document, request.args)
         for document in documents:
-            with open(f"documents/{document["name"]}", "rb") as file:
+            with open(f"documents/{document['name']}", "rb") as file:
                 document["file"] = base64.b64encode(file.read()).decode('utf-8')
         return documents
     except Exception as e:
@@ -233,4 +249,3 @@ def export(ids):
     finally:
         merger.close()
         [f.close() for f in files]
-
