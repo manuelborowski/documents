@@ -37,7 +37,7 @@ def meta():
     if user_agent.is_mobile:
         student = dl.student.get(("username", "=", current_user.username))
         if student:
-            documents = dl.document.get_m([("student_id", "=", student.id), (f"co_account_{current_user.coaccount_nbr}", "=", student.co_account(current_user.coaccount_nbr)), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
+            documents = dl.document.get_m([("username", "=", student.username), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
             documents = [d.to_dict() for d in documents]
             return json.dumps({"current_user": current_user.to_dict(), "student": student.to_dict(), "documents": documents,})
         return({"status": "warning", "msg": "Sorry, geen toegang!"})
