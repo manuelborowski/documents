@@ -49,7 +49,7 @@
     import {AlertPopup} from "../../static/js/common/popup.js";
 
     $(document).ready(function () {
-        const message = {{ message|tojson or null }};
+        const message = {{ message|default(none)|tojson }};
         if (message) new AlertPopup(message.status, message.data);
         document.getElementById("login").addEventListener("click", async e => {
             const result = await Swal.fire({
