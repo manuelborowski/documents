@@ -190,15 +190,20 @@ def update(params):
             # If the number of days or the start date is changed, the document needs to be generated again
             current_name = document.name
             document.timestamp = datetime.datetime.now()
+            update_saved_document = False
+            del params["id"]
+            document = dl.models.update(dl.document.Document, document, params)
             if "nbr_days" in params:
-                document.nbr_days = params["nbr_days"]
+                update_saved_document = True
             if "from_day" in params:
-                document.from_day = params["from_day"]
                 # because the start date is changed, the document name is changed as well
-                document.name = document.name[:-14] + document.from_day + ".pdf"
+                document.name = document.name[:-14] + str(document.from_day) + ".pdf"
+                update_saved_document = True
             dl.models.commit()
             # replace the existing document
-            return __pdf_from_form(document, student, replace=current_name)
+            if update_saved_document:
+                return __pdf_from_form(document, student, replace=current_name)
+        return {"status": "ok", "msg": "Attest behandeld"}
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}

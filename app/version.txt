@@ -31,3 +31,4 @@
 0.12: on android, the regular file-input-element does not work with the camera anymore
 0.13: update to 3.13.  Bugfix get attests, filter was not correct
 0.14: bugfix jinja2 rendering, catch null and make it none
+0.15: update document, update "processed", bugfixed "from_day"
