@@ -1,3 +1,4 @@
+import {dayPartField, bindDayPartField, sameDayDates, selectedDayPart, dayPartLabel} from "../../common/day_part.js";
 import {fetch_get, fetch_post, fetch_update} from "../../common/common.js";
 import {ResizeImage} from "./image.js";
 import {AlertPopup} from "../../common/popup.js";
@@ -10,11 +11,13 @@ $(document).ready(async function () {
     const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.student}`
+    let medical_day_part = "whole_day";
     const ctx = {
         ouderattest: // keep track of the previous, latest auderattest, if present
             {
                 nbr_attests: 0,
                 nbr_days: 0,
+                day_part: "whole_day",
                 latest_date: new Date("2000-01-01"),
                 id: -1,
                 updated: false
@@ -35,12 +38,13 @@ $(document).ready(async function () {
     const __handle_add_response = resp => {
         if (resp.document) {
             const div = document.createElement("div");
-            div.innerHTML = `${resp.document.from_day} ${resp.document.document_type}`;
+            div.innerHTML = `${resp.document.from_day} ${resp.document.document_type}${dayPartLabel(resp.document)}`;
             div.dataset.id = resp.document.id;
             document_list.insertBefore(div, document_list.firstChild);
             if (resp.document.document_type === "ouderattest") {
                 div.innerHTML += ` (${resp.document.nbr_days} dagen)`
                 ctx.ouderattest.nbr_days = resp.document.nbr_days;
+                ctx.ouderattest.day_part = resp.document.day_part || "whole_day";
                 ctx.ouderattest.nbr_attests++;
                 ctx.ouderattest.id = resp.document.id;
                 ctx.ouderattest.latest_date = new Date(resp.document.from_day);
@@ -227,6 +231,7 @@ $(document).ready(async function () {
         const data = new FormData();
         data.append("from_day", from_day_value);
         data.append("nbr_days", new_nbr_of_days);
+        data.append("day_part", medical_day_part);
         data.append("document_type", "medischattest");
         data.append("username", meta.current_user.username)
         data.append("coaccount_nbr", meta.current_user.coaccount_nbr);
@@ -259,6 +264,7 @@ $(document).ready(async function () {
                 return false
             }
             new_nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
+            medical_day_part = selectedDayPart(new_nbr_of_days);
             return true
         }
 
@@ -269,6 +275,7 @@ $(document).ready(async function () {
                     Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
                     Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day", value=${now}><br>
                     t.e.m.: <input type="date" id="absent-till-day"><br>
+                    ${dayPartField}
                 </div> `,
             showCloseButton: true,
             showCancelButton: true,
@@ -285,6 +292,7 @@ $(document).ready(async function () {
             didRender: () => {
                 const today = new Date().toISOString().split("T")[0];
                 document.getElementById("absent-from-day").value = today;
+                bindDayPartField(sameDayDates);
             }
         });
         if (result.isConfirmed) {
@@ -327,6 +335,8 @@ $(document).ready(async function () {
     const __new_ouderattest = async () => {
         const now = new Date()
         let nbr_of_days = 0;
+        let day_part = "whole_day";
+        ctx.ouderattest.updated = false;
         let from_day_value = null;
         let from_day = null;
         const result = await Swal.fire({
@@ -349,6 +359,7 @@ $(document).ready(async function () {
                         Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day"><br>
                         t.e.m.: <input type="date" id="absent-till-day"><br>
                     </div>
+                    ${dayPartField}
                 </div>
                   `,
             showCloseButton: true,
@@ -370,6 +381,7 @@ $(document).ready(async function () {
                         Swal.fire(`Sorry, de leerling mag maximaal ${OUDERATTEST_CONSECUTIVE} dagen aaneensluitend afwezig zijn!`)
                         return [false, nbr]
                     }
+                    if (day_part !== "whole_day") return [true, nbr];
                     const day_of_week = date.getDay(); // 0 is Sunday
                     if (day_of_week === 4 && nbr >= 2) return [true, OUDERATTEST_CONSECUTIVE] //th, fr -> add sa
                     if (day_of_week === 5 && nbr >= 1) return [true, OUDERATTEST_CONSECUTIVE] //fr -> add sa, su
@@ -383,6 +395,7 @@ $(document).ready(async function () {
                         Swal.fire(`Sorry, u heeft al een attest voor deze dag(en) ingediend`)
                         return [false, false] // error
                     }
+                    if (day_part !== "whole_day" || ctx.ouderattest.day_part !== "whole_day") return [true, false];
                     if ((from_date - ctx.ouderattest.latest_date) / (1000 * 60 * 60 * 24) === 1) {
                         // Date is one day after last day of previous attest, check if it is possible to update previous attest
                         const sum_nbr_days = nbr_days + ctx.ouderattest.nbr_days;
@@ -424,6 +437,7 @@ $(document).ready(async function () {
                     }
                     nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
                 }
+                day_part = selectedDayPart(nbr_of_days);
                 // Check if the oudersattest is valid, see rules at the top
                 const [ok_latest, update_previous_attest] = __check_last_attest(from_day, nbr_of_days);
                 if (!ok_latest) return false // error, try again...
@@ -444,6 +458,8 @@ $(document).ready(async function () {
                     }
                 });
                 const today = new Date().toISOString().split("T")[0];
+                bindDayPartField(() => document.getElementById("nbr-days-select").value === "one-day" ||
+                    (document.getElementById("nbr-days-select").value === "more-days" && sameDayDates()));
                 document.getElementById("absent-on-day").value = today;
                 document.getElementById("absent-from-day").value = today;
             }
@@ -459,6 +475,7 @@ $(document).ready(async function () {
                 const data = new FormData();
                 data.append("from_day", from_day_value);
                 data.append("nbr_days", nbr_of_days);
+                data.append("day_part", day_part);
                 data.append("document_type", "ouderattest");
                 data.append("document_scan", false);
                 data.append("coaccount_nbr", meta.current_user.coaccount_nbr)
@@ -473,7 +490,7 @@ $(document).ready(async function () {
     // Create list with already uploaded documents (current schoolyear only)
     for (const doc of meta.documents) {
         const div = document.createElement("div");
-        div.innerHTML = `${doc.from_day} ${doc.document_type}`;
+        div.innerHTML = `${doc.from_day} ${doc.document_type}${dayPartLabel(doc)}`;
         div.dataset.id = doc.id;
         document_list.appendChild(div);
         if (doc.document_type === "ouderattest") {
@@ -483,6 +500,7 @@ $(document).ready(async function () {
             if (latest_date > ctx.ouderattest.latest_date) {
                 ctx.ouderattest.latest_date = latest_date;
                 ctx.ouderattest.nbr_days = doc.nbr_days;
+                ctx.ouderattest.day_part = doc.day_part || "whole_day";
                 ctx.ouderattest.id = doc.id;
             }
             ctx.ouderattest.nbr_attests++;

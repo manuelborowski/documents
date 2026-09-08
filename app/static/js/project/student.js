@@ -1,3 +1,4 @@
+import {dayPartField, bindDayPartField, sameDayDates, selectedDayPart} from "../common/day_part.js";
 import {datatable_row_data_from_id, datatables_init} from "../datatables/dt.js";
 import {fetch_get, fetch_post} from "../common/common.js";
 
@@ -57,9 +58,9 @@ async function __scan_attest(ids, type, label) {
                 Swal.close();                // Close this popup
                 const [ok_crop, blob] = await __crop_image(base64);
                 if (!ok_crop) return false
-                const [ok_date, from_day, nbr_days] = await __get_from_till_date();
+                const [ok_date, from_day, nbr_days, day_part] = await __get_from_till_date();
                 if (!ok_date) return false
-                await __post_document(blob, type, from_day, nbr_days, student);
+                await __post_document(blob, type, from_day, nbr_days, student, day_part);
             });
             // load button: display a load-file-popup, load the file and show the cropping popup
             load_button.addEventListener("click", () => file_input.click());
@@ -71,9 +72,9 @@ async function __scan_attest(ids, type, label) {
                     Swal.close();                 // Close capture popup
                     const [ok_crop, blob] = await __crop_image(reader.result);
                     if (!ok_crop) return false
-                    const [ok_date, from_day, nbr_days] = await __get_from_till_date();
+                    const [ok_date, from_day, nbr_days, day_part] = await __get_from_till_date();
                     if (!ok_date) return false
-                    await __post_document(blob, type, from_day, nbr_days, student);
+                    await __post_document(blob, type, from_day, nbr_days, student, day_part);
                 };
                 reader.readAsDataURL(file);
             });
@@ -129,14 +130,14 @@ async function __paste_attest(ids, type, label) {
         }
     });
     if (result.isConfirmed) {
-        const [ok_date, from_day, nbr_days] = await __get_from_till_date();
+        const [ok_date, from_day, nbr_days, day_part] = await __get_from_till_date();
         if (!ok_date) return false
-        await __post_document(result.value, type, from_day, nbr_days, student);
+        await __post_document(result.value, type, from_day, nbr_days, student, day_part);
     }
 }
 
 // send the attest to the server
-async function __post_document(file_blob, type, from_day, nbr_days, student) {
+async function __post_document(file_blob, type, from_day, nbr_days, student, day_part) {
     try {
         const data = new FormData();
         const resized_image = new File([file_blob], `${type}.jpg`, {type: file_blob.type, lastModified: Date.now()})
@@ -144,6 +145,7 @@ async function __post_document(file_blob, type, from_day, nbr_days, student) {
         data.append("document_scan", true);
         data.append("from_day", from_day);
         data.append("nbr_days", nbr_days);
+        data.append("day_part", day_part);
         data.append("username", student.username)
         data.append("coaccount_nbr", 5)
         data.append("attachment_file", resized_image);
@@ -158,6 +160,7 @@ async function __get_from_till_date() {
     try {
         const now = new Date()
         let nbr_of_days = 0;
+        let day_part = "whole_day";
         let from_day_value = null;
         let from_day = null;
         const result_date = await Swal.fire({
@@ -167,6 +170,7 @@ async function __get_from_till_date() {
                     Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
                     Van: <input type="date" id="absent-from-day"><br>
                     Tem: <input type="date" id="absent-till-day"><br>
+                    ${dayPartField}
                 </div>
                   `,
             showCloseButton: true,
@@ -192,14 +196,16 @@ async function __get_from_till_date() {
                     return false
                 }
                 nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
+                day_part = selectedDayPart(nbr_of_days);
                 return true
             },
             didRender: () => {
                 const today = new Date().toISOString().split("T")[0];
                 document.getElementById("absent-from-day").value = today;
+                bindDayPartField(sameDayDates);
             }
         });
-        return result_date.isConfirmed ? [true, from_day.toISOString().substring(0, 10), nbr_of_days] : [false, null, null]
+        return result_date.isConfirmed ? [true, from_day.toISOString().substring(0, 10), nbr_of_days, day_part] : [false, null, null]
     } catch (err) {
         Swal.fire("Error", err.message, "error");
     }

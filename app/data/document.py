@@ -25,6 +25,7 @@ class Document(db.Model, SerializerMixin):
     processed = db.Column(db.Boolean, default=False)
     from_day = db.Column(db.Date())
     nbr_days = db.Column(db.Integer(), default=1)
+    day_part = db.Column(db.String(10), nullable=False, default='whole_day', server_default='whole_day')
     schooljaar = db.Column(db.Integer(), default=2000)
     active = db.Column(db.Boolean, default=True)
 

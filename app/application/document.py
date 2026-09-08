@@ -24,6 +24,21 @@ from pathlib import Path
 # copy-paste  |    S           |    S        |    S   |   S
 # form        |    X           |    P        |    X   |   X
 
+DAY_PART_LABELS = {'whole_day': 'Hele dag', 'am': 'Voormiddag (AM)', 'pm': 'Namiddag (PM)'}
+
+
+def normalize_day_part(nbr_days, day_part='whole_day'):
+    if day_part not in DAY_PART_LABELS:
+        raise ValueError('Ongeldig dagdeel')
+    if nbr_days < 1:
+        raise ValueError('Aantal dagen moet minstens 1 zijn')
+    return day_part if nbr_days == 1 else 'whole_day'
+
+
+def day_part_description(document):
+    return DAY_PART_LABELS.get(document.day_part, 'Hele dag') if document.nbr_days == 1 else ''
+
+
 def __make_unique_document_name(filename):
     document_path = Path("documents") / filename
     if not document_path.exists():
@@ -74,7 +89,7 @@ def __pdf_from_scan(request, document,  student):
             </head>
             <body>
                 <b>{app.config["DOCUMENT_TYPE_LABELS"][document.document_type]}</b><br>
-                {student.naam} {student.voornaam} {student.klasgroep} {from_day} - {till_day}<br>
+                {student.naam} {student.voornaam} {student.klasgroep} {from_day} - {till_day} {day_part_description(document)}<br>
                 <img src="{data_uri}" alt="">
             </body>
         </html>
@@ -113,7 +128,7 @@ def __pdf_from_form(document, student, replace = None):
                 <b>Naam:</b> {student.naam}<br>
                 <b>Voornaam:</b> {student.voornaam}<br>
                 <b>Klas:</b> {student.klasgroep}<br>
-                <b>Was afwezig wegens ziekte op:</b> {from_day if nbr_days == 1 else ""}<br>
+                <b>Was afwezig wegens ziekte op:</b> {from_day if nbr_days == 1 else ""} {day_part_description(document)}<br>
                 <b>Was afwezig wegens ziekte vanaf:</b> {from_day if nbr_days > 1 else ""}<br>
                 <b>Tot en met:</b> {till_day if nbr_days > 1 else ""}<br>
                 <b>Naam van de ouder:</b> {document.co_account}<br>
@@ -142,6 +157,7 @@ def add(request):
         coaccount_nbr = int(request.form.get("coaccount_nbr"))
         from_day = request.form.get("from_day")
         nbr_days = int(request.form.get("nbr_days"))
+        day_part = normalize_day_part(nbr_days, request.form.get('day_part', 'whole_day'))
 
         student = dl.student.get(("username", "=", username))
         if student:
@@ -165,6 +181,7 @@ def add(request):
                 "school": student.schoolcode,
                 "schooljaar": al.common.get_current_schoolyear(),
                 "nbr_days": nbr_days,
+                "day_part": day_part,
                 "from_day": from_day,
                 "name": filename
             })
@@ -189,11 +206,14 @@ def update(params):
                 return {"status": "error", "msg": f"Student {document.username} niet gevonden"}
             # If the number of days or the start date is changed, the document needs to be generated again
             current_name = document.name
+            params = dict(params)
+            if 'nbr_days' in params or 'day_part' in params:
+                params['day_part'] = normalize_day_part(int(params.get('nbr_days', document.nbr_days)), params.get('day_part', document.day_part))
             document.timestamp = datetime.datetime.now()
             update_saved_document = False
             del params["id"]
             document = dl.models.update(dl.document.Document, document, params)
-            if "nbr_days" in params:
+            if "nbr_days" in params or "day_part" in params:
                 update_saved_document = True
             if "from_day" in params:
                 # because the start date is changed, the document name is changed as well

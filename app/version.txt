@@ -32,3 +32,4 @@
 0.13: update to 3.13.  Bugfix get attests, filter was not correct
 0.14: bugfix jinja2 rendering, catch null and make it none
 0.15: update document, update "processed", bugfixed "from_day"
+0.16: add attest for 1 day, add select day-part
