@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geen toegang</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 2rem 1rem; background: #f8f9fa; }
+        main { max-width: 36rem; margin: auto; padding: 1.5rem; background: #fff3cd; color: #664d03; border: 1px solid #ffecb5; border-radius: .5rem; }
+        a { color: inherit; }
+    </style>
+</head>
+<body>
+<main role="alert">
+    <h1>Geen toegang</h1>
+    <p>{{ message }}</p>
+    <a href="{{ url_for('auth.login') }}">Terug naar aanmelden</a>
+</main>
+</body>
+</html>

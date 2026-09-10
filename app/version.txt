@@ -33,3 +33,4 @@
 0.14: bugfix jinja2 rendering, catch null and make it none
 0.15: update document, update "processed", bugfixed "from_day"
 0.16: add attest for 1 day, add select day-part
+0.17: coaccounts can only see the mobile version.  Level cannot access the site

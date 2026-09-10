@@ -12,6 +12,11 @@ log.addFilter(MyLogFilter())
 
 bp_auth = Blueprint('auth', __name__, )
 
+def login_level_warning(level):
+    if str(level) in ("1", "2"):
+        return render_template('warning.html', message="Je hebt onvoldoende rechten om aan te melden."), 403
+
+
 def login_user_type(user, type="user"):
     login_user(user, remember=False)
     session.permanent = True
@@ -44,6 +49,9 @@ def login():
                 if secret_pin == login_pin:
                     users = dl.models.get_m(dl.user.User, ("first_name", "=", "pinlogin"), order_by="last_login")
                     user = users[0]
+                    warning = login_level_warning(user.level)
+                    if warning:
+                        return warning
                     login_user_type(user, "user")
                     log.info(f'user {user.username} logged in')
                     user = dl.user.update(user, {"last_login": datetime.datetime.now()})
@@ -59,6 +67,9 @@ def login():
             else:
                 user = dl.models.get(dl.user.User,('username', "c=", request.form["username"])) # c= : case sensitive comparison
                 if user is not None and user.verify_password(request.form["password"]):
+                    warning = login_level_warning(user.level)
+                    if warning:
+                        return warning
                     login_user_type(user, "user")
                     log.info(f'user {user.username} logged in')
                     user = dl.user.update(user, {"last_login": datetime.datetime.now()})
@@ -109,6 +120,9 @@ def login_ss():
                 user = dl.models.get(dl.user.User,[('username', "c=" ,profile['username']), ('user_type', "=", dl.user.User.USER_TYPE.OAUTH)])
                 profile['last_login'] = datetime.datetime.now()
                 if user:
+                    warning = login_level_warning(user.level)
+                    if warning:
+                        return warning
                     profile['first_name'] = profile['name']
                     profile['last_name'] = profile['surname']
                     user.email = profile['email']
@@ -116,6 +130,9 @@ def login_ss():
                 else:
                     if dl.settings.get_configuration_setting('generic-new-via-smartschool'):
                         default_level = dl.settings.get_configuration_setting('generic-new-via-smartschool-default-level')
+                        warning = login_level_warning(default_level)
+                        if warning:
+                            return warning
                         profile['first_name'] = profile['name']
                         profile['last_name'] = profile['surname']
                         profile['user_type'] = dl.user.User.USER_TYPE.OAUTH
@@ -166,6 +183,10 @@ def auto_login_generic():
     if "AUTO_LOGIN_KEY" in app.config and "AUTO_USER" in app.config:
         if app.config["AUTO_LOGIN_KEY"] == key:
             user = dl.models.get(dl.user.User,('username', "c=", app.config["AUTO_USER"])) # c= : case sensitive comparison
+            if user is not None:
+                warning = login_level_warning(user.level)
+                if warning:
+                    return warning
             login_user(user)
             log.info(u'user {} logged in'.format(user.username))
             user = dl.user.update(user, {"last_login": datetime.datetime.now()})
@@ -197,5 +218,4 @@ def login_test():
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
         return("<h1>Fout</h1>")
-
 

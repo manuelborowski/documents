@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, render_template, request, send_file, session
 from flask_login import login_required, current_user
 import json
 from user_agents import parse
@@ -17,6 +17,8 @@ bp_document = Blueprint('document', __name__)
 @bp_document.route('/documentshow', methods=["GET"])
 @login_required
 def show():
+    if session.get("type") == "coaccount":
+        return render_template("m/project/document.html")
     user_agent_str = request.headers.get('User-Agent')
     user_agent = parse(user_agent_str)
     if user_agent.is_mobile:
@@ -34,7 +36,7 @@ def dt():
 def meta():
     user_agent_str = request.headers.get('User-Agent')
     user_agent = parse(user_agent_str)
-    if user_agent.is_mobile:
+    if session.get("type") == "coaccount" or user_agent.is_mobile:
         student = dl.student.get(("username", "=", current_user.username))
         if student:
             documents = dl.document.get_m([("username", "=", student.username), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
