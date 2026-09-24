@@ -10,7 +10,7 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     SQLALCHEMY_ECHO = False
-    SOCKETIO_ASYNC_MODE = None
+    SOCKETIO_ASYNC_MODE = 'threading'
     LOG_LEVEL = "DEBUG"
 
 
