@@ -7,11 +7,14 @@ $(document).ready(async function () {
     const document_list = document.getElementById("document-list");
     const student_div = document.getElementById("student-div");
     const new_medischattest_btn = document.getElementById("new-medischattest-btn");
+    const new_loattest_btn = document.getElementById("new-loattest-btn");
     const new_ouderattest_btn = document.getElementById("new-ouderattest-btn");
     const document_field = document.getElementById("document-field");
     const meta = await fetch_get("document.meta");
     student_div.innerHTML = `Leerling: ${meta.current_user.student}`
     let medical_day_part = "whole_day";
+    let upload_document_type = "medischattest";
+    let upload_document_label = "medisch attest";
     const ctx = {
         ouderattest: // keep track of the previous, latest auderattest, if present
             {
@@ -36,7 +39,7 @@ $(document).ready(async function () {
     }
 
     const __handle_add_response = resp => {
-        if (resp.document) {
+        if (resp && resp.document) {
             const div = document.createElement("div");
             div.innerHTML = `${resp.document.from_day} ${resp.document.document_type}${dayPartLabel(resp.document)}`;
             div.dataset.id = resp.document.id;
@@ -221,18 +224,18 @@ $(document).ready(async function () {
             }
         });
         if (result.isConfirmed && result.value) {
-            __set_document_field_file(new File([result.value], `medisch-attest-${Date.now()}.jpg`, {type: result.value.type}));
+            __set_document_field_file(new File([result.value], `${upload_document_type}-${Date.now()}.jpg`, {type: result.value.type}));
         }
     }
 
     document_field.addEventListener("change", async e => {
         if (!e.target.files.length) return;
-        const patience = Swal.fire({html: "Even geduld, het medisch attest wordt bewaard", showConfirmButton: false});
+        const patience = Swal.fire({html: `Even geduld, het ${upload_document_label} wordt bewaard`, showConfirmButton: false});
         const data = new FormData();
         data.append("from_day", from_day_value);
         data.append("nbr_days", new_nbr_of_days);
         data.append("day_part", medical_day_part);
-        data.append("document_type", "medischattest");
+        data.append("document_type", upload_document_type);
         data.append("username", meta.current_user.username)
         data.append("coaccount_nbr", meta.current_user.coaccount_nbr);
         data.append("document_scan", true);
@@ -245,22 +248,23 @@ $(document).ready(async function () {
         __handle_add_response(resp);
     });
 
-    const __new_medisch_attest = async () => {
+    const __new_scan_attest = async (document_type, label) => {
+        upload_document_type = document_type;
+        upload_document_label = label;
         const now = new Date()
 
-        const validate_medisch_attest_dates = () => {
+        const validate_attest_dates = () => {
             from_day_value = document.getElementById("absent-from-day").value;
             const from_day = new Date(from_day_value);
             const till_day_date_select = document.getElementById("absent-till-day");
             const till_day_value = till_day_date_select.value;
-            if (till_day_value === "") {
-                till_day_date_select.style.borderColor = "red";
-                till_day_date_select.style.borderWidth = "thick";
-                return false
+            if (!from_day_value || !till_day_value || Number.isNaN(from_day.getTime())) {
+                Swal.showValidationMessage("Kies een begindatum en een einddatum.");
+                return false;
             }
             const till_day = new Date(till_day_value);
             if (till_day < from_day) {
-                Swal.fire("Sorry, maar de eerste datum moet <b>voor</b> de tweede datum")
+                Swal.showValidationMessage("De einddatum moet op of na de begindatum liggen.");
                 return false
             }
             new_nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
@@ -269,11 +273,11 @@ $(document).ready(async function () {
         }
 
         const result = await Swal.fire({
-            title: "Nieuw medisch attest",
+            title: `Nieuw ${label}`,
             html: `
                 <div style="text-align:left;">
                     Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
-                    Was afwezig vanwege ziekte vanaf: <input type="date" id="absent-from-day", value=${now}><br>
+                    ${document_type === "loattest" ? "Vrijgesteld van de les lichamelijke opvoeding vanaf:" : "Was afwezig vanwege ziekte vanaf:"} <input type="date" id="absent-from-day"><br>
                     t.e.m.: <input type="date" id="absent-till-day"><br>
                     ${dayPartField}
                 </div> `,
@@ -287,8 +291,8 @@ $(document).ready(async function () {
             denyButtonAriaLabel: "Foto kiezen",
             cancelButtonText: `Annuleer `,
             cancelButtonAriaLabel: "Annuleer",
-            preConfirm: validate_medisch_attest_dates,
-            preDeny: validate_medisch_attest_dates,
+            preConfirm: validate_attest_dates,
+            preDeny: validate_attest_dates,
             didRender: () => {
                 const today = new Date().toISOString().split("T")[0];
                 document.getElementById("absent-from-day").value = today;
@@ -297,7 +301,7 @@ $(document).ready(async function () {
         });
         if (result.isConfirmed) {
             const result = await Swal.fire({
-                title: "Nieuw medisch attest",
+                title: `Nieuw ${label}`,
                 html: `
                 <div>
                     <img src="static/img/take-picture-of-document.png" width=150px><br>
@@ -490,7 +494,7 @@ $(document).ready(async function () {
     // Create list with already uploaded documents (current schoolyear only)
     for (const doc of meta.documents) {
         const div = document.createElement("div");
-        div.innerHTML = `${doc.from_day} ${doc.document_type}${dayPartLabel(doc)}`;
+        div.innerHTML = `${doc.from_day} ${meta.document_type_labels[doc.document_type]}${dayPartLabel(doc)}`;
         div.dataset.id = doc.id;
         document_list.appendChild(div);
         if (doc.document_type === "ouderattest") {
@@ -510,8 +514,13 @@ $(document).ready(async function () {
     // When clicked on a document in the list, show the content
     document_list.addEventListener("click", async event => __show_attest(event));
 
-    if (meta.current_user.coaccount_nbr === 0) new_ouderattest_btn.style.display = "none";
-    // New ouder/medisch attest button clicked
-    new_medischattest_btn.addEventListener("click", async () => __new_medisch_attest());
-    new_ouderattest_btn.addEventListener("click", async () => __new_ouderattest());
+    new_medischattest_btn.addEventListener("click", async () => __new_scan_attest("medischattest", "medisch attest"));
+    if (meta.current_user.coaccount_nbr > 0 && meta.current_user.coaccount_nbr < 5) {
+        new_loattest_btn.hidden = false;
+        new_loattest_btn.addEventListener("click", async () => __new_scan_attest("loattest", "LO-attest"));
+        new_ouderattest_btn.hidden = false;
+        new_ouderattest_btn.addEventListener("click", async () => __new_ouderattest());
+        student_div.innerHTML += `<br>Ouder: ${meta.current_user.coaccount_name}`
+
+    }
 });

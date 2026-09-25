@@ -41,7 +41,7 @@ def meta():
         if student:
             documents = dl.document.get_m([("username", "=", student.username), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
             documents = [d.to_dict() for d in documents]
-            return json.dumps({"current_user": current_user.to_dict(), "student": student.to_dict(), "documents": documents,})
+            return json.dumps({"current_user": current_user.to_dict(), "student": student.to_dict(), "documents": documents, "document_type_labels": app.config["DOCUMENT_TYPE_LABELS"]})
         return({"status": "warning", "msg": "Sorry, geen toegang!"})
 
     schools = dl.document.get_m(fields = ["school"], distinct=True)
