@@ -16,6 +16,12 @@
         <h2>Attest opladen</h2>
     </div>
     <div id="student-div"></div>
+    <div id="student-picker" hidden>
+        <div class="student-search-row">
+            <input id="student-search" type="text" placeholder="Typ een leerlingnaam" aria-label="Leerling zoeken" autocomplete="off" aria-controls="student-list">
+            <button id="student-clear" type="button" aria-label="Leerlingselectie wissen">×</button>
+        </div>
+    </div>
     <div style="display: flex;flex-direction: column;">
         <button id="new-medischattest-btn" class="green-button" >Nieuw medisch attest</button>
         <button id="new-loattest-btn" class="green-button" hidden>Nieuw LO-attest</button>
@@ -23,6 +29,7 @@
     </div>
 </nav>
 <main id="main">
+    <div id="student-list" aria-label="Leerlingen" hidden></div>
     <div>
         <div id="document-list"></div>
     </div>

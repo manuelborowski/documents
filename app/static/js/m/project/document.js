@@ -10,8 +10,76 @@ $(document).ready(async function () {
     const new_loattest_btn = document.getElementById("new-loattest-btn");
     const new_ouderattest_btn = document.getElementById("new-ouderattest-btn");
     const document_field = document.getElementById("document-field");
+    // if present, username is an argument in the url
+    const username = new URLSearchParams(window.location.search).get("username");
     const meta = await fetch_get("document.meta");
-    student_div.innerHTML = `Leerling: ${meta.current_user.student}`
+    if (!meta) {
+        new_medischattest_btn.hidden = true;
+        return;
+    }
+    // Staff member accesses the page
+    if (meta.staff) {
+        const selected = username ? await fetch_get("document.student", {username}) : null;
+        meta.student = selected?.student || null;
+        meta.documents = selected?.documents || [];
+        document.getElementById("student-picker").hidden = false;
+        const list = document.getElementById("student-list");
+        const search = document.getElementById("student-search");
+        const clear = document.getElementById("student-clear");
+        search.value = meta.student ? `${meta.student.naam} ${meta.student.voornaam}` : "";
+        list.hidden = !!meta.student; // hide the list if a student is selected
+        const filter_students = () => {
+            // create a list of students, filtered on the content of the textbox
+            const query = search.value.trim().toLocaleLowerCase();
+            const students = meta.students.filter(student => student.label.toLocaleLowerCase().includes(query));
+            list.innerHTML = "";
+            for (const student of students) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "student-choice";
+                button.textContent = student.label;
+                // if a student is clicked, reload the page with the username as argument
+                button.addEventListener("click", () => {
+                    search.value = student.label;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("username", student.username);
+                    window.location.assign(url.href);
+                });
+                list.appendChild(button);
+            }
+            if (!students.length) {
+                list.textContent = "Geen leerlingen gevonden";
+            }
+        };
+        // clear-student button is clicked
+        const restart_selection = () => {
+            meta.student = null;
+            document_list.hidden = true;
+            new_medischattest_btn.hidden = true;
+            new_loattest_btn.hidden = true;
+            student_div.textContent = "Selecteer eerst een leerling.";
+            list.hidden = false;
+            const url = new URL(window.location.href);
+            url.searchParams.delete("username");
+            window.history.replaceState(null, "", url.href);
+            filter_students();
+        };
+        search.addEventListener("input", restart_selection);
+        clear.addEventListener("click", () => {
+            search.value = "";
+            restart_selection();
+            search.focus();
+        });
+        filter_students();
+        if (!meta.student) {
+            new_medischattest_btn.hidden = true;
+            student_div.textContent = "Selecteer eerst een leerling.";
+            return;
+        }
+        student_div.textContent = `Leerling: ${meta.student.naam} ${meta.student.voornaam} (${meta.student.klasgroep})`;
+    } else {
+        student_div.textContent = `Leerling: ${meta.current_user.student}`;
+    }
     let medical_day_part = "whole_day";
     let upload_document_type = "medischattest";
     let upload_document_label = "medisch attest";
@@ -229,15 +297,15 @@ $(document).ready(async function () {
     }
 
     document_field.addEventListener("change", async e => {
-        if (!e.target.files.length) return;
+        if (!e.target.files.length || (meta.staff && !meta.student)) return;
         const patience = Swal.fire({html: `Even geduld, het ${upload_document_label} wordt bewaard`, showConfirmButton: false});
         const data = new FormData();
         data.append("from_day", from_day_value);
         data.append("nbr_days", new_nbr_of_days);
         data.append("day_part", medical_day_part);
         data.append("document_type", upload_document_type);
-        data.append("username", meta.current_user.username)
-        data.append("coaccount_nbr", meta.current_user.coaccount_nbr);
+        data.append("username", meta.staff ? meta.student.username : meta.current_user.username)
+        data.append("coaccount_nbr", meta.staff ? 5 : meta.current_user.coaccount_nbr);
         data.append("document_scan", true);
         const resized_blob = await new ResizeImage({max_bytes: 100_000}).process(e.target.files[0]);
         const resized_image = new File([resized_blob], e.target.files[0].name, {type: resized_blob.type, lastModified: Date.now()})
@@ -249,6 +317,7 @@ $(document).ready(async function () {
     });
 
     const __new_scan_attest = async (document_type, label) => {
+        if (meta.staff && !meta.student) return;
         upload_document_type = document_type;
         upload_document_label = label;
         const now = new Date()
@@ -515,6 +584,10 @@ $(document).ready(async function () {
     document_list.addEventListener("click", async event => __show_attest(event));
 
     new_medischattest_btn.addEventListener("click", async () => __new_scan_attest("medischattest", "medisch attest"));
+    if (meta.staff) {
+        new_loattest_btn.hidden = false;
+        new_loattest_btn.addEventListener("click", async () => __new_scan_attest("loattest", "LO-attest"));
+    }
     if (meta.current_user.coaccount_nbr > 0 && meta.current_user.coaccount_nbr < 5) {
         new_loattest_btn.hidden = false;
         new_loattest_btn.addEventListener("click", async () => __new_scan_attest("loattest", "LO-attest"));

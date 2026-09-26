@@ -1,4 +1,4 @@
-import {navigation_menu} from "../../../../../template/app/static/js/m/project/navigation_menu.js";
+import {navigation_menu} from "./project/navigation_menu.js";
 
 export const inject_menu = new_menu => {
     navigation_menu = new_menu;
@@ -39,4 +39,3 @@ export const base_init = () => {
     });
 
 }
-

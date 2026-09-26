@@ -34,6 +34,7 @@ body > nav > div {
 
 main {
     flex: 1;
+    min-height: 0;
     overflow-y: auto; /* Enable scrolling if content overflows */
     padding-top: 10px;
     background-color: #f8f9fa;
@@ -68,6 +69,52 @@ button {
     border: yellow;
     border-style: solid;
     margin-top: 5px;
+}
+
+#student-picker {
+    flex-direction: column;
+    gap: 6px;
+}
+
+#student-picker[hidden] {
+    display: none;
+}
+
+.student-search-row {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+}
+
+#student-search {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+}
+
+#student-clear {
+    width: 44px;
+    padding: 0;
+    flex-shrink: 0;
+    background: white;
+    color: #333;
+    font-size: 28px;
+}
+
+.student-choice {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 14px 12px;
+    border-radius: 0;
+    border-bottom: 1px solid #ddd;
+    background: white;
+    color: #222;
+    text-align: left;
+}
+
+.student-choice:hover, .student-choice:focus-visible {
+    background: #e5f1ff;
 }
 
 .red {
@@ -122,4 +169,3 @@ label:has(input[type="checkbox"]) {
 .register-active {
     background: white;
 }
-

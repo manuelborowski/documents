@@ -37,6 +37,13 @@ def meta():
     user_agent_str = request.headers.get('User-Agent')
     user_agent = parse(user_agent_str)
     if session.get("type") == "coaccount" or user_agent.is_mobile:
+        if getattr(current_user, "level", 0) >= 3:
+            students = dl.student.get_m(order_by="naam")
+            return json.dumps({
+                "current_user": current_user.to_dict(), "staff": True,
+                "students": [{"username": s.username, "label": f"{s.naam} {s.voornaam} ({s.klasgroep})"} for s in students],
+                "document_type_labels": app.config["DOCUMENT_TYPE_LABELS"],
+            })
         student = dl.student.get(("username", "=", current_user.username))
         if student:
             documents = dl.document.get_m([("username", "=", student.username), ("schooljaar", "=", al.common.get_current_schoolyear())], order_by="-id")
@@ -47,6 +54,24 @@ def meta():
     schools = dl.document.get_m(fields = ["school"], distinct=True)
     schools = [s[0] for s in schools if s[0] != None]
     return json.dumps({"schools": schools, "document_type_labels": app.config["DOCUMENT_TYPE_LABELS"]})
+
+@bp_document.route('/document/student', methods=['GET'])
+@login_required
+def student():
+    if getattr(current_user, "level", 0) < 3:
+        return {"status": "warning", "msg": "Sorry, geen toegang!"}, 403
+    username = request.args.get("username")
+    if not username:
+        return {"status": "warning", "msg": "Selecteer een leerling."}, 400
+    selected_student = dl.student.get(("username", "=", username))
+    if not selected_student:
+        return {"status": "warning", "msg": "Leerling niet gevonden."}, 404
+    documents = dl.document.get_m([
+        ("username", "=", selected_student.username),
+        ("schooljaar", "=", al.common.get_current_schoolyear()),
+    ], order_by="-id")
+    return json.dumps({"student": selected_student.to_dict(), "documents": [d.to_dict() for d in documents]})
+
 
 @bp_document.route('/document', methods=['POST', "GET", "UPDATE", "DELETE"])
 @login_required

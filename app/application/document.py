@@ -155,6 +155,10 @@ def add(request):
         document_scan = request.form.get("document_scan", False) == "true" # photo, i.e. scan, upload or copy-paste
         username = request.form.get("username")
         coaccount_nbr = int(request.form.get("coaccount_nbr"))
+        if getattr(current_user, "level", 0) >= 3:
+            coaccount_nbr = 5
+        elif username != current_user.username or coaccount_nbr == 5:
+            return {"status": "warning", "msg": "Sorry, geen toegang!"}
         from_day = request.form.get("from_day")
         nbr_days = int(request.form.get("nbr_days"))
         day_part = normalize_day_part(nbr_days, request.form.get('day_part', 'whole_day'))

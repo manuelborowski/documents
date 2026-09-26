@@ -1,4 +1,4 @@
-import {fetch_get} from "../../../../../template/app/static/js/common/common.js";
+import {fetch_get} from "../common/common.js";
 import {base_init} from "./base.js";
 
 $(document).ready(async () => {
