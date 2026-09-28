@@ -37,3 +37,4 @@
 0.18: bugfixed debugging
 0.19: add lo-attest
 0.20: mobile, staff can add attest on behalf of student
+0.21: mobile, staff, add all attests

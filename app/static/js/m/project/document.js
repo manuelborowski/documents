@@ -10,6 +10,8 @@ $(document).ready(async function () {
     const new_loattest_btn = document.getElementById("new-loattest-btn");
     const new_ouderattest_btn = document.getElementById("new-ouderattest-btn");
     const document_field = document.getElementById("document-field");
+    const staff_attest_type = document.getElementById("staff-attest-type");
+    const staff_attest_btn = document.getElementById("staff-attest-btn");
     // if present, username is an argument in the url
     const username = new URLSearchParams(window.location.search).get("username");
     const meta = await fetch_get("document.meta");
@@ -53,6 +55,8 @@ $(document).ready(async function () {
         };
         // clear-student button is clicked
         const restart_selection = () => {
+            staff_attest_type.hidden = true;
+            staff_attest_btn.hidden = true;
             meta.student = null;
             document_list.hidden = true;
             new_medischattest_btn.hidden = true;
@@ -346,7 +350,7 @@ $(document).ready(async function () {
             html: `
                 <div style="text-align:left;">
                     Datum: ${now.toLocaleDateString("nl-NL", {weekday: "long", year: "numeric", month: "long", day: "numeric"})}<br>
-                    ${document_type === "loattest" ? "Vrijgesteld van de les lichamelijke opvoeding vanaf:" : "Was afwezig vanwege ziekte vanaf:"} <input type="date" id="absent-from-day"><br>
+                    ${meta.staff ? "Attest geldig vanaf:" : document_type === "loattest" ? "Vrijgesteld van de les lichamelijke opvoeding vanaf:" : "Was afwezig vanwege ziekte vanaf:"} <input type="date" id="absent-from-day"><br>
                     t.e.m.: <input type="date" id="absent-till-day"><br>
                     ${dayPartField}
                 </div> `,
@@ -585,8 +589,22 @@ $(document).ready(async function () {
 
     new_medischattest_btn.addEventListener("click", async () => __new_scan_attest("medischattest", "medisch attest"));
     if (meta.staff) {
-        new_loattest_btn.hidden = false;
-        new_loattest_btn.addEventListener("click", async () => __new_scan_attest("loattest", "LO-attest"));
+        new_medischattest_btn.hidden = true;
+        for (const [type, label] of Object.entries(meta.document_type_labels)) {
+            const option = document.createElement("option");
+            option.value = type;
+            option.textContent = label;
+            staff_attest_type.appendChild(option);
+        }
+        staff_attest_type.value = Object.hasOwn(meta.document_type_labels, "medischattest") ? "medischattest" : Object.keys(meta.document_type_labels)[0];
+        staff_attest_type.hidden = false;
+        staff_attest_btn.hidden = false;
+        staff_attest_btn.addEventListener("click", async () => {
+            const type = staff_attest_type.value;
+            if (Object.hasOwn(meta.document_type_labels, type)) {
+                await __new_scan_attest(type, meta.document_type_labels[type]);
+            }
+        });
     }
     if (meta.current_user.coaccount_nbr > 0 && meta.current_user.coaccount_nbr < 5) {
         new_loattest_btn.hidden = false;
