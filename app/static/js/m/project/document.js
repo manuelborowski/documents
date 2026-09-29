@@ -410,6 +410,20 @@ $(document).ready(async function () {
     // Ouderattest for Friday -> Saturday and Sunday assumed -> is 3 consecutive days
     // Ouderattest for Thursday and Friday -> Saturday assumed -> is 3 consecutive days
     const __new_ouderattest = async () => {
+        if (ctx.ouderattest.nbr_attests >= OUDERATTEST_MAX_NBR) {
+            await Swal.fire({
+                icon: "warning",
+                text: `Sorry, u mag maximaal ${OUDERATTEST_MAX_NBR} ouderattesten insturen!`,
+                confirmButtonText: "Ok",
+                showConfirmButton: true,
+                showCloseButton: false,
+                showCancelButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                timer: undefined,
+            });
+            return;
+        }
         const now = new Date()
         let nbr_of_days = 0;
         let day_part = "whole_day";
@@ -450,10 +464,6 @@ $(document).ready(async function () {
 
                 // return [ok, nbr_days]
                 const __check_nbr_days = (date, nbr) => {
-                    if ((ctx.ouderattest.nbr_attests) >= OUDERATTEST_MAX_NBR) {
-                        Swal.fire(`Sorry, u mag maximaal ${OUDERATTEST_MAX_NBR} ouderattesten insturen!`);
-                        return [false, nbr]
-                    }
                     if (nbr > OUDERATTEST_CONSECUTIVE) {
                         Swal.fire(`Sorry, de leerling mag maximaal ${OUDERATTEST_CONSECUTIVE} dagen aaneensluitend afwezig zijn!`)
                         return [false, nbr]
@@ -548,6 +558,20 @@ $(document).ready(async function () {
                 patience.close();
                 __handle_update_ouderattest_response(resp);
             } else {
+                if (ctx.ouderattest.nbr_attests == (OUDERATTEST_MAX_NBR - 1)) {
+                    const warning = await Swal.fire({
+                        icon: "warning",
+                        html: `${OUDERATTEST_MAX_NBR}de ouderattest.<br>Voortaan bij elke afwezigheid doktersattest vereist.`,
+                        confirmButtonText: "Ok",
+                        showConfirmButton: true,
+                        showCloseButton: false,
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        timer: undefined,
+                    });
+                    if (!warning.isConfirmed) return;
+                }
                 const patience = Swal.fire({html: "Even geduld, het ouderattest wordt bewaard", showConfirmButton: false});
                 const data = new FormData();
                 data.append("from_day", from_day_value);
