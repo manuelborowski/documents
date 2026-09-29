@@ -1,5 +1,7 @@
-from flask import redirect, render_template, url_for, request, Blueprint, session
-from flask_login import login_required, login_user, logout_user
+from flask import abort, redirect, render_template, url_for, request, Blueprint, session
+from flask_login import login_required, logout_user
+from app.private_access import login_user
+from werkzeug.exceptions import HTTPException
 from app import app, data as dl
 from user_agents import parse
 import datetime, json, inspect, qrcode, io, base64
@@ -18,7 +20,8 @@ def login_level_warning(level):
 
 
 def login_user_type(user, type="user"):
-    login_user(user, remember=False)
+    if not login_user(user, remember=False):
+        abort(403, description="Aanmelden vanaf dit IP-adres is niet toegestaan")
     session.permanent = True
     session["type"] = type
 
@@ -86,6 +89,8 @@ def login():
             return render_template('m/login.html', pin_enabled=app.config["MOBILE_PIN_ENABLE"])
         else:
             return render_template('login.html', message=message, qr_img=img_base64, qr_caption=app.config["MOBILE_LOGIN_CAPTION"])
+    except HTTPException:
+        raise
     except Exception as e:
         message = {"status": "error", "data": f"{str(e)}"}
         log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
@@ -172,6 +177,8 @@ def login_ss():
         else:
             redirect_uri = f'{app.config["SMARTSCHOOL_OUATH_REDIRECT_URI"]}/ss'
             return redirect(f'{app.config["SMARTSCHOOL_OAUTH_SERVER"]}?app_uri={redirect_uri}')
+    except HTTPException:
+        raise
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
         return("<h1>Fout</h1>")
@@ -187,7 +194,7 @@ def auto_login_generic():
                 warning = login_level_warning(user.level)
                 if warning:
                     return warning
-            login_user(user)
+            login_user_type(user, "user")
             log.info(u'user {} logged in'.format(user.username))
             user = dl.user.update(user, {"last_login": datetime.datetime.now()})
             if not user:
@@ -215,7 +222,8 @@ def login_test():
                 log.info(f'TEST co-account {coaccount.coaccount_name} user {coaccount.username} logged in')
                 # Ok, continue
                 return redirect(url_for('document.show'))
+    except HTTPException:
+        raise
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {str(e)}')
         return("<h1>Fout</h1>")
-

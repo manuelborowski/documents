@@ -39,6 +39,7 @@ class User(UserMixin, db.Model, SerializerMixin):
     level = db.Column(db.Integer)
     user_type = db.Column(db.String(256))
     last_login = db.Column(db.DateTime())
+    remote = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     rfid = db.Column(db.String(256), default=None)
     pin = db.Column(db.String(256), default=None)
 
@@ -145,7 +146,6 @@ def pre_sql_search(search_string):
     search_constraints.append(User.last_name.like(search_string))
     search_constraints.append(User.email.like(search_string))
     return search_constraints
-
 
 
 

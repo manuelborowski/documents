@@ -10,7 +10,7 @@ from werkzeug.routing import IntegerConverter
 
 # Warning: update flask_jsglue.py: from markupsafe import Markup
 
-version = "0.22"
+version = "0.23"
 
 app = Flask(__name__, instance_relative_config=True, template_folder='presentation/template/')
 
@@ -57,6 +57,9 @@ app.url_map.converters['int'] = IntegerConverter
 login_manager.init_app(app)
 login_manager.login_message = 'Je moet aangemeld zijn om deze pagina te zien!'
 login_manager.login_view = 'auth.login'
+
+from app.private_access import enforce_user_ip
+app.before_request(enforce_user_ip)
 
 socketio = SocketIO(app, async_mode=app.config['SOCKETIO_ASYNC_MODE'], cors_allowed_origins="*")
 

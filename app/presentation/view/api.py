@@ -2,7 +2,8 @@ from flask import request, Blueprint
 from app import log, app, data as dl, application as al
 import json, inspect, html, datetime
 from functools import wraps
-from flask_login import login_user, logout_user
+from flask_login import logout_user
+from app.private_access import login_user
 
 bp_api = Blueprint('api', __name__)
 
@@ -23,7 +24,8 @@ def api_core(api_level, func, *args, **kwargs):
                 if key_info["level"] >= api_level:
                     log.info(f"API access by '{key_info["label"]}', from {remote_ip}, URI {request.url}")
                     try:
-                        login_user(user_api)
+                        if not login_user(user_api):
+                            return json.dumps({"status": False, "data": "Access from this IP address is not allowed"}), 403
                         kwargs["remote_ip"] = remote_ip
                         ret = func(*args, **kwargs)
                         logout_user()
@@ -66,4 +68,3 @@ hb_timestamp = int(datetime.datetime.now().timestamp())
 def hb():
     ret = {"hb": hb_timestamp}
     return json.dumps(ret)
-
