@@ -40,3 +40,4 @@
 0.21: mobile, staff, add all attests
 0.22: ouderattest, updated warning popups
 0.23: restrict public access
+0.24: documents overview, update contextmenu

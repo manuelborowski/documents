@@ -13,18 +13,17 @@ const __document_delete = async (ids) => {
 }
 
 const __document_export = async (ids) => {
-
     bootbox.confirm("Wilt u dit/deze document(en) exporteren?<br>Opgelet, meerdere documenten worden samengevoegd tot één pdf", async result => {
         if (result) {
             window.open(Flask.url_for("document.export", {ids}), "_blank");
         }
     });
-
 }
 
 const context_menu_items = [
-    {type: "item", label: 'Document(en) verwijderen', iconscout: 'trash-alt', cb: __document_delete},
     {type: "item", label: 'Document(en) exporteren', iconscout: 'export', cb: __document_export},
+    {type: "divider"},
+    {type: "item", label: 'Document(en) verwijderen', iconscout: 'trash-alt', cb: __document_delete},
 ]
 
 const filter_menu_items = [
