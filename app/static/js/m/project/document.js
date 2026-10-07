@@ -1,5 +1,5 @@
 import {dayPartField, bindDayPartField, sameDayDates, selectedDayPart, dayPartLabel} from "../../common/day_part.js";
-import {fetch_get, fetch_post, fetch_update} from "../../common/common.js";
+import {fetch_get, fetch_post, fetch_update, fetch_delete} from "../../common/common.js";
 import {ResizeImage} from "./image.js";
 import {AlertPopup} from "../../common/popup.js";
 
@@ -87,46 +87,37 @@ $(document).ready(async function () {
     let medical_day_part = "whole_day";
     let upload_document_type = "medischattest";
     let upload_document_label = "medisch attest";
-    const ctx = {
-        ouderattest: // keep track of the previous, latest auderattest, if present
-            {
-                nbr_attests: 0,
-                nbr_days: 0,
-                day_part: "whole_day",
-                latest_date: new Date("2000-01-01"),
-                id: -1,
-                updated: false
-            }
+    const ctx = {ouderattest: {attests: [], nbr_attests: 0, updated: false}}; // Cache to hold all the ouderattests
+
+    // Render all attests consistently and refresh the ouderattest validation cache.
+    const __render_attests = () => {
+        document_list.replaceChildren();
+        for (const doc of meta.documents) {
+            const div = document.createElement("div");
+            const label = meta.document_type_labels[doc.document_type] || doc.document_type;
+            div.textContent = `${doc.from_day} ${label}${dayPartLabel(doc)}`;
+            if (doc.document_type === "ouderattest") div.textContent += `, ${doc.nbr_days} dag(en)`;
+            div.dataset.id = doc.id;
+            document_list.appendChild(div);
+        }
+        ctx.ouderattest.attests = meta.documents.filter(doc => doc.document_type === "ouderattest");
+        ctx.ouderattest.nbr_attests = ctx.ouderattest.attests.length;
     };
 
-    // An ouderattest was updated (nbr of days)
-    const __handle_update_ouderattest_response = resp => {
-        if (resp.document && ctx.ouderattest.updated) {
-            const attest_div = document.querySelector(`div[data-id="${resp.document.id}"]`);
-            attest_div.innerHTML = `${resp.document.from_day} ${resp.document.document_type} (${resp.document.nbr_days} dagen)`;
-            ctx.ouderattest.updated = false;
-            ctx.ouderattest.latest_date = new Date(resp.document.from_day);
-            ctx.ouderattest.latest_date.setDate(ctx.ouderattest.latest_date.getDate() + resp.document.nbr_days - 1);
-        }
-    }
-
     const __handle_add_response = resp => {
-        if (resp && resp.document) {
-            const div = document.createElement("div");
-            div.innerHTML = `${resp.document.from_day} ${resp.document.document_type}${dayPartLabel(resp.document)}`;
-            div.dataset.id = resp.document.id;
-            document_list.insertBefore(div, document_list.firstChild);
-            if (resp.document.document_type === "ouderattest") {
-                div.innerHTML += ` (${resp.document.nbr_days} dagen)`
-                ctx.ouderattest.nbr_days = resp.document.nbr_days;
-                ctx.ouderattest.day_part = resp.document.day_part || "whole_day";
-                ctx.ouderattest.nbr_attests++;
-                ctx.ouderattest.id = resp.document.id;
-                ctx.ouderattest.latest_date = new Date(resp.document.from_day);
-                ctx.ouderattest.latest_date.setDate(ctx.ouderattest.latest_date.getDate() + resp.document.nbr_days - 1);
-            }
+        if (!resp?.document) return;
+        const index = meta.documents.findIndex(doc => String(doc.id) === String(resp.document.id));
+        if (index === -1) meta.documents.unshift(resp.document);
+        else meta.documents[index] = resp.document;
+        __render_attests();
+    };
+
+    const __handle_update_ouderattest_response = resp => {
+        if (resp?.document && ctx.ouderattest.updated) {
+            __handle_add_response(resp);
+            ctx.ouderattest.updated = false;
         }
-    }
+    };
 
     const __show_attest = async event => {
         const div = event.target.closest("div");
@@ -137,27 +128,29 @@ $(document).ready(async function () {
                 const base64_image = `data:${data.file_type};base64, ` + data.file;
                 const new_tab = window.open();
                 if (new_tab) {
-                    new_tab.document.write(`<img src="${base64_image}" alt="Base64 Image">`);
-                    new_tab.document.write(`<title>${data.name}</title>`);
+                    new_tab.document.title = data.name;
+                    const image = new_tab.document.createElement("img");
+                    image.src = base64_image;
+                    image.alt = "Base64 Image";
+                    new_tab.document.body.replaceChildren(image);
                 } else {
                     alert("Popup blocked! Please allow popups for this site.");
                 }
             } else if (data.file_type.includes("video")) {
                 const new_tab = window.open();
                 if (new_tab) {
-                    const base64_mp4 = `data:${data.file_type};base64, ` + data.data.file;
-                    new_tab.document.write(`<title>${data.name}</title>`);
-                    new_tab.document.write(`
-                                <html>
-                                  <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-color:#000;">
-                                    <video controls autoplay style="max-width:100%; max-height:100vh;">
-                                      <source src="${base64_mp4}" type="${data.file_type}">
-                                      Your browser does not support the video tag.
-                                    </video>
-                                  </body>
-                                </html>
-                              `);
-                    new_tab.document.close();
+                    new_tab.document.title = data.name;
+                    new_tab.document.body.style.cssText = "margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-color:#000;";
+                    const video = new_tab.document.createElement("video");
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.style.cssText = "max-width:100%; max-height:100vh;";
+                    const source = new_tab.document.createElement("source");
+                    source.src = `data:${data.file_type};base64,${data.file}`;
+                    source.type = data.file_type;
+                    video.appendChild(source);
+                    video.appendChild(new_tab.document.createTextNode("Your browser does not support the video tag."));
+                    new_tab.document.body.replaceChildren(video);
                 } else {
                     alert("Popup blocked! Please allow popups for this site.");
                 }
@@ -406,9 +399,10 @@ $(document).ready(async function () {
 
     // Ouderattest, 4 per schoolyear, max 3 consecutive days per attest
     // After 3 days, medical attest required
-    // New ouderattest can be concatenated to previous, given max 3 consecutive days
-    // Ouderattest for Friday -> Saturday and Sunday assumed -> is 3 consecutive days
-    // Ouderattest for Thursday and Friday -> Saturday assumed -> is 3 consecutive days
+    // Dates may arrive in any order. Reject overlaps and check contiguous whole-day
+    // periods on both sides; extend an adjacent attest only within the three-day limit.
+    // Ouderattest for Friday -> Saturday and Sunday assumed -> is 3 consecutive days.  Monday medical attest (if still absent)
+    // Ouderattest for Thursday and Friday -> Saturday assumed -> is 3 consecutive days.
     const __new_ouderattest = async () => {
         if (ctx.ouderattest.nbr_attests >= OUDERATTEST_MAX_NBR) {
             await Swal.fire({
@@ -469,32 +463,61 @@ $(document).ready(async function () {
                         return [false, nbr]
                     }
                     if (day_part !== "whole_day") return [true, nbr];
-                    const day_of_week = date.getDay(); // 0 is Sunday
+                    const day_of_week = date.getUTCDay(); // 0 is Sunday
                     if (day_of_week === 4 && nbr >= 2) return [true, OUDERATTEST_CONSECUTIVE] //th, fr -> add sa
                     if (day_of_week === 5 && nbr >= 1) return [true, OUDERATTEST_CONSECUTIVE] //fr -> add sa, su
                     return [true, nbr]
                 }
 
-                // return [ok, update_latest_attest]
-                const __check_last_attest = (from_date, nbr_days) => {
-                    if (ctx.ouderattest.nbr_attests === 0) return [true, false]
-                    if (from_date <= ctx.ouderattest.latest_date) {
-                        Swal.fire(`Sorry, u heeft al een attest voor deze dag(en) ingediend`)
-                        return [false, false] // error
+                // Validate the complete interval, including weekend days added above.
+                const __check_attests = (from_date, nbr_days) => {
+                    const day_ms = 1000 * 60 * 60 * 24;
+                    const start = from_date.getTime() / day_ms;
+                    const end = start + nbr_days - 1;
+                    const intervals = ctx.ouderattest.attests.map(doc => ({
+                        doc, start: new Date(doc.from_day).getTime() / day_ms,
+                        end: new Date(doc.from_day).getTime() / day_ms + Number(doc.nbr_days) - 1
+                    }));
+                    // Reject any overlap with an existing attest
+                    if (intervals.some(item => start <= item.end && end >= item.start)) {
+                        Swal.fire('Sorry, u heeft al een attest voor deze dag(en) ingediend');
+                        return false;
                     }
-                    if (day_part !== "whole_day" || ctx.ouderattest.day_part !== "whole_day") return [true, false];
-                    if ((from_date - ctx.ouderattest.latest_date) / (1000 * 60 * 60 * 24) === 1) {
-                        // Date is one day after last day of previous attest, check if it is possible to update previous attest
-                        const sum_nbr_days = nbr_days + ctx.ouderattest.nbr_days;
-                        if (sum_nbr_days > OUDERATTEST_CONSECUTIVE) {
-                            Swal.fire(`Sorry, de leerling mag maximaal ${OUDERATTEST_CONSECUTIVE} dagen aaneensluitend afwezig zijn!`)
-                            return [false, false] // error
+                    // if nbr of days is 1, then day_part can be am or pm.  In this case, 2 attests are required for 2 consecutive days with day_part, e.g. am
+                    if (day_part !== "whole_day") return true;
+                    // filter out intervals with partial days (am or pm)
+                    const whole_days = intervals.filter(item => (item.doc.day_part || "whole_day") === "whole_day");
+                    // Sort the new interval and existing attests into connected periods.
+                    // periods is an array of objects with start and end day, and an array of attests.
+                    // if intervals can be combined, the existing object is adapted (end day) and its attest is also pushed in the array of attests
+                    const periods = [];
+                    // [...whole_days, {..}].sort(...) creates a sorted array (on start), including the new attest (with a dummy document)
+                    for (const item of [...whole_days, {start, end, doc: null}].sort((a, b) => a.start - b.start)) {
+                        const previous = periods[periods.length - 1]; //pick the latest or null
+                        if (previous && item.start <= previous.end + 1) {
+                            previous.end = Math.max(previous.end, item.end);
+                            previous.items.push(item);
+                        } else {
+                            periods.push({start: item.start, end: item.end, items: [item]});
                         }
-                        ctx.ouderattest.nbr_days = sum_nbr_days;
-                        ctx.ouderattest.updated = true;
-                        return [true, true] // update previous (latest) attest with new nbr of days
                     }
-                    return [true, false] // create new attest
+                    // Find the period with the dummy document (new attest) and check if it exceeds the maximum nbr of days
+                    const period = periods.find(period => period.items.some(item => item.doc === null));
+                    if (period.end - period.start + 1 > OUDERATTEST_CONSECUTIVE) {
+                        Swal.fire(`Sorry, de leerling mag maximaal ${OUDERATTEST_CONSECUTIVE} dagen aaneensluitend afwezig zijn!`);
+                        return false;
+                    }
+                    const connected = period.items.filter(item => item.doc !== null);
+                    if (connected.length) {
+                        // The new attest bridges (two) or expands (one) existing attest(s)
+                        // Keep the earliest attest and remove all others after updating it.
+                        ctx.ouderattest.updated = true;
+                        ctx.ouderattest.id = connected[0].doc.id;
+                        ctx.ouderattest.from_day = new Date(period.start * day_ms).toISOString().split("T")[0];
+                        ctx.ouderattest.nbr_days = period.end - period.start + 1;
+                        ctx.ouderattest.obsolete_ids = connected.slice(1).map(item => item.doc.id);
+                    }
+                    return true;
                 }
 
                 const nbr_days_select = document.getElementById("nbr-days-select");
@@ -524,15 +547,17 @@ $(document).ready(async function () {
                     }
                     nbr_of_days = (till_day - from_day) / (1000 * 60 * 60 * 24) + 1;
                 }
+                if (!Number.isFinite(from_day.getTime())) {
+                    Swal.fire("Vul een geldige begindatum in");
+                    return false;
+                }
+                ctx.ouderattest.updated = false;
                 day_part = selectedDayPart(nbr_of_days);
                 // Check if the oudersattest is valid, see rules at the top
-                const [ok_latest, update_previous_attest] = __check_last_attest(from_day, nbr_of_days);
-                if (!ok_latest) return false // error, try again...
-                if (update_previous_attest) return true // ok, check ctx.ouderattest for updated attest
                 const [ok_days, updated_nbr_of_days] = __check_nbr_days(from_day, nbr_of_days)
                 if (!ok_days) return false // error, try again
                 nbr_of_days = updated_nbr_of_days;
-                return true
+                return __check_attests(from_day, nbr_of_days);
             },
             didRender: () => {
                 document.getElementById("nbr-days-select").addEventListener("change", e => {
@@ -554,9 +579,29 @@ $(document).ready(async function () {
         if (result.isConfirmed) {
             if (ctx.ouderattest.updated) {
                 const patience = Swal.fire({html: "Even geduld, het ouderattest wordt aangepast", showConfirmButton: false});
-                const resp = await fetch_update("document.document", {id: ctx.ouderattest.id, nbr_days: ctx.ouderattest.nbr_days})
+                const resp = await fetch_update("document.document", {id: ctx.ouderattest.id, from_day: ctx.ouderattest.from_day, nbr_days: ctx.ouderattest.nbr_days})
                 patience.close();
                 __handle_update_ouderattest_response(resp);
+                // Never remove an existing attest unless the merged document was saved.
+                if (resp?.document && ctx.ouderattest.obsolete_ids.length) {
+                    // delete obsolete attests and update ctx.ouderattest accordingly
+                    const deleted = await fetch_delete("document.document", {ids: ctx.ouderattest.obsolete_ids.join(",")});
+                    // Status-only responses become null in the shared fetch helper.
+                    // Confirm absence before removing a row when no IDs were returned.
+                    let deleted_ids = deleted?.deleted_ids;
+                    if (!Array.isArray(deleted_ids) || deleted_ids.length === 0) {
+                        deleted_ids = [];
+                        for (const id of ctx.ouderattest.obsolete_ids) {
+                            const remaining = await fetch_get("document.document", {filters: `id$=$${id}`});
+                            if (Array.isArray(remaining) && remaining.length === 0) deleted_ids.push(id);
+                        }
+                    }
+                    if (deleted_ids.length) {
+                        const ids = new Set(deleted_ids.map(String));
+                        meta.documents = meta.documents.filter(doc => !ids.has(String(doc.id)));
+                        __render_attests();
+                    }
+                }
             } else {
                 if (ctx.ouderattest.nbr_attests == (OUDERATTEST_MAX_NBR - 1)) {
                     const warning = await Swal.fire({
@@ -588,25 +633,8 @@ $(document).ready(async function () {
         }
     }
 
-    // Create list with already uploaded documents (current schoolyear only)
-    for (const doc of meta.documents) {
-        const div = document.createElement("div");
-        div.innerHTML = `${doc.from_day} ${meta.document_type_labels[doc.document_type]}${dayPartLabel(doc)}`;
-        div.dataset.id = doc.id;
-        document_list.appendChild(div);
-        if (doc.document_type === "ouderattest") {
-            div.innerHTML += `, ${doc.nbr_days} dag(en)`
-            const latest_date = new Date(doc.from_day);
-            latest_date.setDate(latest_date.getDate() + doc.nbr_days - 1);
-            if (latest_date > ctx.ouderattest.latest_date) {
-                ctx.ouderattest.latest_date = latest_date;
-                ctx.ouderattest.nbr_days = doc.nbr_days;
-                ctx.ouderattest.day_part = doc.day_part || "whole_day";
-                ctx.ouderattest.id = doc.id;
-            }
-            ctx.ouderattest.nbr_attests++;
-        }
-    }
+    // Show already uploaded documents for the current school year.
+    __render_attests();
 
     // When clicked on a document in the list, show the content
     document_list.addEventListener("click", async event => __show_attest(event));

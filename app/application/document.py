@@ -251,7 +251,7 @@ def delete(ids):
         for document in documents:
             document.active = False
         dl.models.commit()
-        return {"status": "ok", "msg": "Documenten zijn verwijderd"}
+        return {"status": "ok", "msg": "Documenten zijn verwijderd", "deleted_ids": [document.id for document in documents]}
     except Exception as e:
         log.error(f'{inspect.currentframe().f_code.co_name}: {e}')
         return {"status": "error", "msg": str(e)}

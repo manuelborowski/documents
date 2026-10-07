@@ -41,3 +41,4 @@
 0.22: ouderattest, updated warning popups
 0.23: restrict public access
 0.24: documents overview, update contextmenu
+0.25: ouderattest, bugfix the rules when adding a new attest
